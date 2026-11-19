@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html lang="si">
+<html lang="si" translate="no">
 <head>
   <meta charset="UTF-8">
+  <meta name="google" content="notranslate">
   <title>Smart Grocery POS (Supabase Cloud)</title>
   <!-- Supabase JavaScript Library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -23,6 +24,7 @@
     .navbar {
       display: flex; justify-content: space-between; align-items: center;
       background: #020617; padding: 10px 20px; border-bottom: 1px solid var(--border);
+      flex-wrap: wrap; gap: 8px;
     }
     .brand { font-size: 1.2rem; font-weight: bold; color: var(--accent); }
     .nav-btns button {
@@ -71,9 +73,11 @@
       padding: 10px; cursor: pointer; transition: 0.15s;
     }
     .prod-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .prod-card.low-stock-card { border-color: rgba(239, 68, 68, 0.65); background: rgba(239, 68, 68, 0.08); }
     .prod-name { font-weight: 600; font-size: 0.88rem; margin-bottom: 4px; }
     .prod-price { color: var(--accent); font-weight: bold; font-size: 0.92rem; }
-    .prod-stock { font-size: 0.75rem; color: var(--muted); }
+    .prod-stock { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .prod-stock.low { color: var(--danger); font-weight: bold; }
 
     /* Middle Column: Current Bill Items */
     .bill-scroll {
@@ -135,7 +139,8 @@
     }
     .modal-box {
       background: var(--card); border: 2px solid var(--accent); border-radius: 12px;
-      padding: 20px; width: 90%; max-width: 420px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      padding: 20px; width: 92%; max-width: 460px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      max-height: 90vh; overflow-y: auto;
     }
     .batch-btn {
       width: 100%; text-align: left; background: #0f172a; border: 1px solid var(--border);
@@ -165,12 +170,13 @@
     .r-right { text-align: right; }
   </style>
 </head>
-<body>
+<body class="notranslate">
 
   <div class="navbar">
     <div class="brand">⚡ Smart Grocery POS (Cloud)</div>
     <div class="nav-btns">
       <button class="active" onclick="switchTab('pos', this)">🧾 Billing</button>
+      <button onclick="switchTab('history', this)">📜 Bill History</button>
       <button onclick="switchTab('stock', this)">📦 Stock / Items</button>
       <button onclick="switchTab('dash', this)">📊 Dashboard</button>
     </div>
@@ -183,7 +189,7 @@
         <div class="panel">
           <input type="text" id="searchInput" class="search-box" placeholder="🔍 Barcode Scan / නම ටයිප් කරන්න..." autofocus>
           <div style="font-size: 0.78rem; color: var(--muted); margin-top: 5px;">
-            * භාණ්ඩය මත Click කර බිල් එකට එකතු කරන්න.
+            * භාණ්ඩය මත Click කර බිල් එකට එකතු කරන්න (Stock 5ට අඩු නම් රතු පාටින් පෙන්වයි).
           </div>
           <div id="quickProducts" class="quick-grid">Loading products...</div>
         </div>
@@ -252,7 +258,41 @@
       </div>
     </div>
 
-    <!-- TAB 2: STOCK & ADD ITEM -->
+    <!-- TAB 2: BILL HISTORY (පැරණි බිල්පත්) -->
+    <div id="tab-history" class="tab-content">
+      <div class="panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+          <h3 style="margin:0;">📜 පැරණි බිල්පත් (Bill History)</h3>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="date" id="histDateFilter" onchange="filterBillHistory()" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff;">
+            <input type="text" id="histSearchInput" oninput="filterBillHistory()" placeholder="🔍 Bill No / නම සොයන්න..." style="padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff; min-width:210px;">
+            <button onclick="resetHistoryFilters()" style="background:#334155; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">All Bills</button>
+            <button class="btn-secondary" style="padding:8px 12px;" onclick="loadBillHistory()">🔄 Refresh</button>
+          </div>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Invoice No</th>
+                <th>දිනය සහ වේලාව</th>
+                <th>Payment</th>
+                <th>Customer / Note</th>
+                <th>Discount</th>
+                <th>Net Total</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <tr><td colspan="7" style="text-align:center; color:var(--muted); padding:20px;">Loading bills...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: STOCK & ADD ITEM -->
     <div id="tab-stock" class="tab-content">
       <div class="panel" style="margin-bottom: 15px;">
         <h3 style="margin-top:0;">➕ නව භාණ්ඩයක් ඇතුළත් කිරීම / Stock එකතු කිරීම</h3>
@@ -312,7 +352,7 @@
       </div>
     </div>
 
-    <!-- TAB 3: DASHBOARD -->
+    <!-- TAB 4: DASHBOARD -->
     <div id="tab-dash" class="tab-content">
       <div class="dash-grid">
         <div class="stat-card">
@@ -329,6 +369,30 @@
         </div>
       </div>
       <button class="btn-secondary" onclick="loadData()">🔄 Refresh Data</button>
+    </div>
+  </div>
+
+  <!-- BILL DETAILS & RE-PRINT MODAL -->
+  <div id="billDetailModal" class="modal-overlay">
+    <div class="modal-box">
+      <h3 style="margin-top:0; color:var(--accent);" id="bdTitle">Invoice Details</h3>
+      <div id="bdMeta" style="font-size:0.85rem; color:var(--muted); margin-bottom:10px;"></div>
+      <table style="margin-bottom:12px;">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Price</th>
+            <th style="text-align:right;">Total</th>
+          </tr>
+        </thead>
+        <tbody id="bdItemsBody"></tbody>
+      </table>
+      <div id="bdTotals" style="background:#0f172a; padding:10px; border-radius:8px; font-size:0.95rem; margin-bottom:14px;"></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <button onclick="closeBillDetailModal()" style="padding:10px; background:transparent; border:1px solid var(--danger); color:var(--danger); border-radius:6px; cursor:pointer; font-weight:bold;">Close</button>
+        <button onclick="reprintSelectedBill()" class="btn-primary" style="padding:10px;">🖨️ Re-Print (58mm)</button>
+      </div>
     </div>
   </div>
 
@@ -419,13 +483,15 @@
 
   <script>
     // ========================================================
-    // ඔබේ SUPABASE PROJECT URL සහ ANON KEY එක මෙතැනට යොදන්න
+    // ඔබේ SUPABASE PROJECT URL සහ PUBLISHABLE KEY එක
     // ========================================================
     const SUPABASE_URL = "https://hcogbyozomnotdyzpckn.supabase.co";
     const SUPABASE_KEY = "sb_publishable_9FTxiBWkqKEYFzs6IJ54CQ_qX7GGvdl";
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let allProducts = [];
+    let allSalesHistory = [];
+    let selectedBillForPrint = null;
     let cart = [];
     let pendingBatches = [];
     let isAdminUnlocked = false;
@@ -434,7 +500,6 @@
     window.onload = loadData;
 
     async function loadData() {
-      // 1. Products ලබාගැනීම
       const { data: prods, error: prodErr } = await db
         .from('products')
         .select('*')
@@ -459,7 +524,7 @@
       renderQuickProducts(allProducts);
       renderStockTable(allProducts);
 
-      // 2. අද දවසේ Sales Summary ලබාගැනීම
+      // අද දවසේ Sales Summary
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
@@ -496,9 +561,148 @@
       }
 
       if (tabId === 'pos') document.getElementById('searchInput').focus();
+      if (tabId === 'history') loadBillHistory();
       if (tabId === 'stock') document.getElementById('pCode').focus();
     }
 
+    // ==========================================
+    // BILL HISTORY FUNCTIONS
+    // ==========================================
+    async function loadBillHistory() {
+      const tbody = document.getElementById('historyTableBody');
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:20px;">Loading bills...</td></tr>';
+
+      const { data, error } = await db
+        .from('sales')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (error) {
+        tbody.innerHTML = '<tr><td colspan="7" style="color:var(--danger);">Error: ' + error.message + '</td></tr>';
+        return;
+      }
+
+      allSalesHistory = data || [];
+      filterBillHistory();
+    }
+
+    function filterBillHistory() {
+      const dateVal = document.getElementById('histDateFilter').value;
+      const q = document.getElementById('histSearchInput').value.toLowerCase().trim();
+
+      const filtered = allSalesHistory.filter(s => {
+        const billDate = new Date(s.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
+        const matchDate = !dateVal || billDate === dateVal;
+        const matchText = !q ||
+          (s.invoice_no && s.invoice_no.toLowerCase().includes(q)) ||
+          (s.customer_note && s.customer_note.toLowerCase().includes(q)) ||
+          (s.payment_method && s.payment_method.toLowerCase().includes(q));
+        return matchDate && matchText;
+      });
+
+      renderBillHistory(filtered);
+    }
+
+    function resetHistoryFilters() {
+      document.getElementById('histDateFilter').value = '';
+      document.getElementById('histSearchInput').value = '';
+      renderBillHistory(allSalesHistory);
+    }
+
+    function renderBillHistory(list) {
+      const tbody = document.getElementById('historyTableBody');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:20px;">බිල්පත් හමු නොවීය</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(s => {
+        const dt = new Date(s.created_at).toLocaleString();
+        const isCredit = s.payment_method === 'Credit';
+        return `
+          <tr>
+            <td style="font-weight:bold; color:var(--accent);">${s.invoice_no}</td>
+            <td>${dt}</td>
+            <td style="color:${isCredit ? '#fbbf24' : 'var(--text)'}; font-weight:${isCredit ? 'bold' : 'normal'};">${s.payment_method}</td>
+            <td>${s.customer_note || '-'}</td>
+            <td>Rs. ${Number(s.discount || 0).toFixed(2)}</td>
+            <td style="font-weight:bold;">Rs. ${Number(s.net_total).toFixed(2)}</td>
+            <td>
+              <button onclick='viewBillDetails(${JSON.stringify(s)})' style="background:#3b82f6; color:#fff; border:none; border-radius:4px; padding:5px 10px; cursor:pointer; font-weight:bold;">
+                👁️ View / Print
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function viewBillDetails(sale) {
+      document.getElementById('bdTitle').innerText = "🧾 " + sale.invoice_no;
+      document.getElementById('bdMeta').innerText = "Date: " + new Date(sale.created_at).toLocaleString() + " | Payment: " + sale.payment_method + (sale.customer_note ? " (" + sale.customer_note + ")" : "");
+      document.getElementById('bdItemsBody').innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading items...</td></tr>';
+      document.getElementById('billDetailModal').style.display = 'flex';
+
+      const { data: items, error } = await db
+        .from('sale_items')
+        .select('*')
+        .eq('invoice_no', sale.invoice_no);
+
+      if (error) {
+        document.getElementById('bdItemsBody').innerHTML = '<tr><td colspan="4" style="color:var(--danger);">Error loading items</td></tr>';
+        return;
+      }
+
+      const itemList = items || [];
+      selectedBillForPrint = { sale, items: itemList };
+
+      document.getElementById('bdItemsBody').innerHTML = itemList.map(i => `
+        <tr>
+          <td>${i.name}</td>
+          <td>${i.qty}</td>
+          <td>${Number(i.price).toFixed(2)}</td>
+          <td style="text-align:right;">${Number(i.line_total).toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('bdTotals').innerHTML = `
+        <div style="display:flex; justify-content:space-between;"><span>Subtotal:</span><span>Rs. ${Number(sale.subtotal).toFixed(2)}</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>Discount:</span><span>Rs. ${Number(sale.discount || 0).toFixed(2)}</span></div>
+        <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--accent); font-size:1.1rem; margin-top:4px; border-top:1px solid var(--border); padding-top:4px;">
+          <span>NET TOTAL:</span><span>Rs. ${Number(sale.net_total).toFixed(2)}</span>
+        </div>
+      `;
+    }
+
+    function closeBillDetailModal() {
+      document.getElementById('billDetailModal').style.display = 'none';
+      selectedBillForPrint = null;
+    }
+
+    function reprintSelectedBill() {
+      if (!selectedBillForPrint) return;
+      const { sale, items } = selectedBillForPrint;
+      document.getElementById('rInvNo').innerText = sale.invoice_no;
+      document.getElementById('rDate').innerText = new Date(sale.created_at).toLocaleString();
+      document.getElementById('rItemsBody').innerHTML = items.map(i => `
+        <tr><td colspan="3">${i.name}</td></tr>
+        <tr>
+          <td>@${Number(i.price).toFixed(2)}</td>
+          <td class="r-right">${i.qty}</td>
+          <td class="r-right">${Number(i.line_total).toFixed(2)}</td>
+        </tr>
+      `).join('');
+      document.getElementById('rSub').innerText = Number(sale.subtotal).toFixed(2);
+      document.getElementById('rDisc').innerText = Number(sale.discount || 0).toFixed(2);
+      document.getElementById('rNet').innerText = "Rs. " + Number(sale.net_total).toFixed(2);
+      document.getElementById('rCash').innerText = Number(sale.net_total).toFixed(2);
+      document.getElementById('rBal').innerText = "0.00";
+      window.print();
+    }
+
+    // ==========================================
+    // POS BILLING FUNCTIONS
+    // ==========================================
     const searchInput = document.getElementById('searchInput');
     searchInput.addEventListener('input', function() {
       const q = this.value.toLowerCase().trim();
@@ -525,15 +729,18 @@
         box.innerHTML = '<div style="color:var(--muted);">භාණ්ඩ හමු නොවීය</div>';
         return;
       }
-      box.innerHTML = list.map(p => `
-        <div class="prod-card" onclick='addToCart(${JSON.stringify(p)})'>
-          <div class="prod-name">${p.name}</div>
-          <div class="prod-price">Rs. ${p.price.toFixed(2)} / ${p.unit}</div>
-          <div class="prod-stock" style="color:${p.stock <= 0 ? 'var(--danger)' : 'var(--muted)'};">
-            Stock: ${p.stock} ${p.unit}
+      box.innerHTML = list.map(p => {
+        const isLow = p.stock <= 5;
+        return `
+          <div class="prod-card ${isLow ? 'low-stock-card' : ''}" onclick='addToCart(${JSON.stringify(p)})'>
+            <div class="prod-name">${p.name}</div>
+            <div class="prod-price">Rs. ${p.price.toFixed(2)} / ${p.unit}</div>
+            <div class="prod-stock ${isLow ? 'low' : ''}">
+              Stock: ${p.stock} ${p.unit} ${isLow ? '⚠️' : ''}
+            </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function handleProductSelection(matches) {
@@ -550,7 +757,7 @@
       listDiv.innerHTML = batches.map((b, i) => `
         <button class="batch-btn" onclick="selectBatch(${i})">
           <span><strong>[${i + 1}] Rs. ${b.price.toFixed(2)}</strong> / ${b.unit}</span>
-          <span style="color:${b.stock > 0 ? 'var(--accent)' : 'var(--danger)'}; font-size:0.85rem;">
+          <span style="color:${b.stock <= 5 ? 'var(--danger)' : 'var(--accent)'}; font-size:0.85rem;">
             Stock: ${b.stock}
           </span>
         </button>
@@ -709,7 +916,6 @@
           };
         });
 
-        // 1. Sales Table එකට Save කිරීම
         const { error: saleErr } = await db.from('sales').insert([{
           invoice_no: invNo,
           subtotal: totals.subtotal,
@@ -721,11 +927,9 @@
         }]);
         if (saleErr) throw saleErr;
 
-        // 2. Sale Items Table එකට Save කිරීම
         const { error: itemsErr } = await db.from('sale_items').insert(saleItemsPayload);
         if (itemsErr) throw itemsErr;
 
-        // 3. අදාළ Batch එකෙන් Stock අඩු කිරීම
         for (const item of cart) {
           const newStock = Number((item.maxStock - item.qty).toFixed(3));
           await db.from('products').update({ stock: newStock }).eq('id', item.id);
@@ -847,7 +1051,7 @@
           <td>${p.unit}</td>
           <td>${p.cost.toFixed(2)}</td>
           <td>${p.price.toFixed(2)}</td>
-          <td style="color:${p.stock <= p.reorder ? 'var(--danger)' : 'var(--accent)'}; font-weight:bold;">
+          <td style="color:${p.stock <= 5 ? 'var(--danger)' : 'var(--accent)'}; font-weight:bold;">
             ${p.stock}
           </td>
           <td style="text-align:right; white-space:nowrap;">
@@ -878,7 +1082,6 @@
       const newPrice = Number(priceVal);
       const addQty = Number(stockVal);
 
-      // Barcode සහ Price දෙකම සමාන Batch එකක් තිබේදැයි බැලීම
       const existingBatch = allProducts.find(p => p.barcode === code && p.price === newPrice);
 
       if (existingBatch) {
@@ -906,7 +1109,6 @@
       await loadData();
     }
 
-    // Enter Navigation & Auto-Fill
     const stockFieldOrder = ['pCode', 'pName', 'pUnit', 'pCost', 'pPrice', 'pStock'];
     function checkExistingBarcode() {
       const code = document.getElementById('pCode').value.trim();
