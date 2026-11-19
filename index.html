@@ -370,23 +370,76 @@
 
     <!-- TAB 4: DASHBOARD -->
     <div id="tab-dash" class="tab-content">
+      <!-- ROW 1: TODAY -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <h3 style="margin:0; color:var(--accent);">📅 අද දවසේ විකුණුම් (Today's Summary)</h3>
+        <button class="btn-secondary" style="padding:6px 12px;" onclick="loadData()">🔄 Refresh</button>
+      </div>
       <div class="dash-grid">
         <div class="stat-card">
-          <div style="color:var(--muted);">අද දවසේ විකුණුම් (Today Sales)</div>
+          <div style="color:var(--muted);">අද මුළු විකුණුම් (Today Sales)</div>
           <div id="dSales" class="stat-val">Rs. 0.00</div>
         </div>
         <div class="stat-card">
-          <div style="color:var(--muted);">අද දවසේ ශුද්ධ ලාභය (Today Profit)</div>
+          <div style="color:var(--muted);">අද ශුද්ධ ලාභය (Today Profit)</div>
           <div id="dProfit" class="stat-val" style="color:#38bdf8;">Rs. 0.00</div>
         </div>
         <div class="stat-card">
-          <div style="color:var(--muted);">අද දැමූ බිල් ගණන (Bills)</div>
+          <div style="color:var(--muted);">අද දැමූ බිල් ගණන (Today Bills)</div>
           <div id="dBills" class="stat-val" style="color:#fbbf24;">0</div>
         </div>
       </div>
-      <button class="btn-secondary" onclick="loadData()">🔄 Refresh Data</button>
+
+      <!-- ROW 2: THIS MONTH -->
+      <h3 style="margin:18px 0 8px 0; color:#38bdf8;">🗓️ මෙම මාසයේ විකුණුම් (This Month's Summary)</h3>
+      <div class="dash-grid">
+        <div class="stat-card">
+          <div style="color:var(--muted);">මාසයේ මුළු විකුණුම් (Month Sales)</div>
+          <div id="mSales" class="stat-val">Rs. 0.00</div>
+        </div>
+        <div class="stat-card">
+          <div style="color:var(--muted);">මාසයේ ශුද්ධ ලාභය (Month Profit)</div>
+          <div id="mProfit" class="stat-val" style="color:#38bdf8;">Rs. 0.00</div>
+        </div>
+        <div class="stat-card">
+          <div style="color:var(--muted);">මාසයේ මුළු බිල් ගණන (Month Bills)</div>
+          <div id="mBills" class="stat-val" style="color:#fbbf24;">0</div>
+        </div>
+      </div>
+
+      <!-- ROW 3: CUSTOM DATE RANGE -->
+      <div class="panel" style="margin-top:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+          <h3 style="margin:0; color:#fbbf24;">🔎 දින පරාසය අනුව විකුණුම් (Date Range Report)</h3>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <label style="font-size:0.85rem; color:var(--muted);">සිට (From):</label>
+            <input type="date" id="dashFromDate" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff;">
+            <label style="font-size:0.85rem; color:var(--muted);">දක්වා (To):</label>
+            <input type="date" id="dashToDate" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff;">
+            <button class="btn-primary" style="padding:8px 16px; font-size:0.95rem;" onclick="loadCustomRangeReport()">🔍 සොයන්න (Search)</button>
+          </div>
+        </div>
+
+        <div class="dash-grid" style="margin-bottom:0;">
+          <div class="stat-card" style="background:#0f172a;">
+            <div style="color:var(--muted);">තෝරාගත් කාලයේ විකුණුම් (Range Sales)</div>
+            <div id="rSales" class="stat-val">Rs. 0.00</div>
+          </div>
+          <div class="stat-card" style="background:#0f172a;">
+            <div style="color:var(--muted);">තෝරාගත් කාලයේ ශුද්ධ ලාභය (Range Profit)</div>
+            <div id="rProfit" class="stat-val" style="color:#38bdf8;">Rs. 0.00</div>
+          </div>
+          <div class="stat-card" style="background:#0f172a;">
+            <div style="color:var(--muted);">මුළු බිල් ගණන (Range Bills)</div>
+            <div id="rBills" class="stat-val" style="color:#fbbf24;">0</div>
+          </div>
+          <div class="stat-card" style="background:#0f172a;">
+            <div style="color:var(--muted);">අයවිය යුතු ණය (Total Dues)</div>
+            <div id="rDues" class="stat-val" style="color:var(--danger);">Rs. 0.00</div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
 
   <!-- BILL DETAILS, RE-PRINT, SETTLE DUE & ADMIN EDIT/VOID MODAL -->
   <div id="billDetailModal" class="modal-overlay">
@@ -565,26 +618,93 @@
       renderQuickProducts(allProducts);
       renderStockTable(allProducts);
 
-      // අද දවසේ Sales Summary (VOIDED බිල් හැර)
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
+      // 1. අද දවසේ සහ 2. මෙම මාසයේ Sales Summary (VOIDED බිල් හැර)
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
 
-      const { data: salesData } = await db
+      const { data: monthSalesData } = await db
         .from('sales')
-        .select('net_total, total_profit, payment_method')
-        .gte('created_at', todayStart.toISOString());
+        .select('created_at, net_total, total_profit, payment_method')
+        .gte('created_at', monthStart.toISOString());
 
-      let todaySales = 0, todayProfit = 0, validBillsCount = 0;
-      (salesData || []).forEach(s => {
+      let todaySales = 0, todayProfit = 0, todayBills = 0;
+      let monthSales = 0, monthProfit = 0, monthBills = 0;
+
+      (monthSalesData || []).forEach(s => {
         if (s.payment_method && s.payment_method.startsWith('VOIDED')) return;
-        todaySales += Number(s.net_total) || 0;
-        todayProfit += Number(s.total_profit) || 0;
-        validBillsCount++;
+        const amt = Number(s.net_total) || 0;
+        const prof = Number(s.total_profit) || 0;
+
+        // මාසයේ එකතුව
+        monthSales += amt;
+        monthProfit += prof;
+        monthBills++;
+
+        // අද දවසේ එකතුව
+        if (new Date(s.created_at) >= todayStart) {
+          todaySales += amt;
+          todayProfit += prof;
+          todayBills++;
+        }
       });
 
       document.getElementById('dSales').innerText = "Rs. " + todaySales.toFixed(2);
       document.getElementById('dProfit').innerText = "Rs. " + todayProfit.toFixed(2);
-      document.getElementById('dBills').innerText = validBillsCount;
+      document.getElementById('dBills').innerText = todayBills;
+
+      document.getElementById('mSales').innerText = "Rs. " + monthSales.toFixed(2);
+      document.getElementById('mProfit').innerText = "Rs. " + monthProfit.toFixed(2);
+      document.getElementById('mBills').innerText = monthBills;
+
+      // Date Range input වලට default ලෙස අද දිනය ලබා දීම
+      const todayStr = now.toLocaleDateString('en-CA');
+      if (!document.getElementById('dashFromDate').value) document.getElementById('dashFromDate').value = todayStr;
+      if (!document.getElementById('dashToDate').value) document.getElementById('dashToDate').value = todayStr;
+      await loadCustomRangeReport();
+    }
+
+    async function loadCustomRangeReport() {
+      const fromVal = document.getElementById('dashFromDate').value;
+      const toVal = document.getElementById('dashToDate').value;
+
+      if (!fromVal || !toVal) {
+        alert("⚠️ කරුණාකර ආරම්භක දිනය (From) සහ අවසාන දිනය (To) තෝරන්න!");
+        return;
+      }
+
+      const startDate = new Date(fromVal + "T00:00:00");
+      const endDate = new Date(toVal + "T23:59:59");
+
+      if (startDate > endDate) {
+        alert("⚠️ ආරම්භක දිනය, අවසාන දිනයට වඩා පසු දිනයක් විය නොහැක!");
+        return;
+      }
+
+      const { data, error } = await db
+        .from('sales')
+        .select('net_total, total_profit, due_amount, payment_method')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      if (error) {
+        alert("Error: " + error.message);
+        return;
+      }
+
+      let rSales = 0, rProfit = 0, rBills = 0, rDues = 0;
+      (data || []).forEach(s => {
+        if (s.payment_method && s.payment_method.startsWith('VOIDED')) return;
+        rSales += Number(s.net_total) || 0;
+        rProfit += Number(s.total_profit) || 0;
+        rDues += Number(s.due_amount) || 0;
+        rBills++;
+      });
+
+      document.getElementById('rSales').innerText = "Rs. " + rSales.toFixed(2);
+      document.getElementById('rProfit').innerText = "Rs. " + rProfit.toFixed(2);
+      document.getElementById('rBills').innerText = rBills;
+      document.getElementById('rDues').innerText = "Rs. " + rDues.toFixed(2);
     }
 
     function switchTab(tabId, btn) {
