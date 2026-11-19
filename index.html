@@ -937,11 +937,23 @@
 
     function renderQuickProducts(list) {
       const box = document.getElementById('quickProducts');
-      if (list.length === 0) {
+      
+      // එකම Barcode එකට මිල කිහිපයක් ඇත්නම්, Stock > 0 ඇති මිල පමණක් පෙන්වීම (Stock = 0 පරණ මිල සැඟවීම)
+      const visibleList = list.filter(p => {
+        if (p.stock > 0) return true;
+        // Stock 0 නම්, එම Barcode එකටම Stock > 0 තව Batch එකක් තිබේදැයි බැලීම
+        const hasActiveBatch = allProducts.some(other => other.barcode === p.barcode && other.stock > 0);
+        if (hasActiveBatch) return false; // අලුත් මිල තිබේ නම් 0 වූ පරණ මිල සඟවන්න
+        // සියලුම Batches 0 නම්, අලුත්ම (අවසාන) Batch එක පමණක් පෙන්වන්න
+        const sameCodeItems = allProducts.filter(other => other.barcode === p.barcode);
+        return sameCodeItems[sameCodeItems.length - 1].id === p.id;
+      });
+
+      if (visibleList.length === 0) {
         box.innerHTML = '<div style="color:var(--muted);">භාණ්ඩ හමු නොවීය</div>';
         return;
       }
-      box.innerHTML = list.map(p => {
+      box.innerHTML = visibleList.map(p => {
         const isLow = p.stock <= 5;
         return `
           <div class="prod-card ${isLow ? 'low-stock-card' : ''}" onclick='addToCart(${JSON.stringify(p)})'>
