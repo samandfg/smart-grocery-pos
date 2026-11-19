@@ -139,7 +139,7 @@
     }
     .modal-box {
       background: var(--card); border: 2px solid var(--accent); border-radius: 12px;
-      padding: 20px; width: 92%; max-width: 460px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      padding: 20px; width: 92%; max-width: 470px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
       max-height: 90vh; overflow-y: auto;
     }
     .batch-btn {
@@ -234,20 +234,20 @@
             </div>
             <div class="tot-row">
               <span>Cash Given (දුන් මුදල):</span>
-              <input type="number" id="inpCash" class="num-input" placeholder="0" oninput="recalcTotals()">
+              <input type="number" id="inpCash" class="num-input" placeholder="0" oninput="recalcTotals()" onkeydown="if(event.key==='Enter'){ event.preventDefault(); checkout(true); }">
             </div>
             <div class="tot-row" style="color: #fbbf24; font-weight: bold; font-size: 1.1rem; margin-top:10px;">
-              <span>Balance (ඉතිරි මුදල):</span>
+              <span id="lblBalanceTitle">Balance (ඉතිරි මුදල):</span>
               <span id="lblBalance">Rs. 0.00</span>
             </div>
             <div class="tot-row" style="margin-top:12px; border-top:1px solid var(--border); padding-top:10px;">
               <span>Payment:</span>
               <select id="selPayment" style="background:var(--card); color:#fff; border:1px solid var(--border); padding:6px 10px; border-radius:4px;">
                 <option value="Cash">Cash (මුදල්)</option>
-                <option value="Credit">Credit (ණයට)</option>
+                <option value="Credit">Credit (සම්පූර්ණ ණයට)</option>
               </select>
             </div>
-            <input type="text" id="inpCustNote" placeholder="ණයට නම් පාරිභෝගිකයාගේ නම..." style="width:100%; margin-top:8px; padding:8px; background:var(--card); border:1px solid var(--border); color:#fff; border-radius:4px;">
+            <input type="text" id="inpCustNote" placeholder="ණය මුදලක් ඇත්නම් පාරිභෝගිකයාගේ නම..." style="width:100%; margin-top:8px; padding:8px; background:var(--card); border:1px solid var(--border); color:#fff; border-radius:4px;">
           </div>
 
           <div class="action-btns">
@@ -266,6 +266,7 @@
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <input type="date" id="histDateFilter" onchange="filterBillHistory()" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff;">
             <input type="text" id="histSearchInput" oninput="filterBillHistory()" placeholder="🔍 Bill No / නම සොයන්න..." style="padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff; min-width:210px;">
+            <button onclick="filterOnlyDues()" style="background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid var(--danger); padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">⚠️ ණය බිල් (Dues)</button>
             <button onclick="resetHistoryFilters()" style="background:#334155; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">All Bills</button>
             <button class="btn-secondary" style="padding:8px 12px;" onclick="loadBillHistory()">🔄 Refresh</button>
           </div>
@@ -277,15 +278,16 @@
               <tr>
                 <th>Invoice No</th>
                 <th>දිනය සහ වේලාව</th>
-                <th>Payment</th>
+                <th>Status</th>
                 <th>Customer / Note</th>
-                <th>Discount</th>
-                <th>Net Total</th>
+                <th>Total</th>
+                <th>Paid</th>
+                <th>Due (ණය)</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody id="historyTableBody">
-              <tr><td colspan="7" style="text-align:center; color:var(--muted); padding:20px;">Loading bills...</td></tr>
+              <tr><td colspan="8" style="text-align:center; color:var(--muted); padding:20px;">Loading bills...</td></tr>
             </tbody>
           </table>
         </div>
@@ -372,7 +374,7 @@
     </div>
   </div>
 
-  <!-- BILL DETAILS & RE-PRINT MODAL -->
+  <!-- BILL DETAILS & RE-PRINT / SETTLE DUE MODAL -->
   <div id="billDetailModal" class="modal-overlay">
     <div class="modal-box">
       <h3 style="margin-top:0; color:var(--accent);" id="bdTitle">Invoice Details</h3>
@@ -389,6 +391,11 @@
         <tbody id="bdItemsBody"></tbody>
       </table>
       <div id="bdTotals" style="background:#0f172a; padding:10px; border-radius:8px; font-size:0.95rem; margin-bottom:14px;"></div>
+      <div id="bdSettleBox" style="display:none; margin-bottom:12px;">
+        <button onclick="settleBillDue()" style="width:100%; padding:11px; background:#f59e0b; color:#000; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.95rem;">
+          ✅ ණය මුදල පියවන්න (Mark Due as Paid)
+        </button>
+      </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
         <button onclick="closeBillDetailModal()" style="padding:10px; background:transparent; border:1px solid var(--danger); color:var(--danger); border-radius:6px; cursor:pointer; font-weight:bold;">Close</button>
         <button onclick="reprintSelectedBill()" class="btn-primary" style="padding:10px;">🖨️ Re-Print (58mm)</button>
@@ -457,6 +464,7 @@
     <div class="r-line"></div>
     <div>Inv: <span id="rInvNo"></span></div>
     <div>Date: <span id="rDate"></span></div>
+    <div id="rCustRow" style="display:none;">Cust: <span id="rCust"></span></div>
     <div class="r-line"></div>
     <table class="r-table">
       <thead>
@@ -473,8 +481,9 @@
       <tr><td>Subtotal:</td><td class="r-right" id="rSub"></td></tr>
       <tr><td>Discount:</td><td class="r-right" id="rDisc"></td></tr>
       <tr class="r-bold" style="font-size:12px;"><td>TOTAL:</td><td class="r-right" id="rNet"></td></tr>
-      <tr><td>Cash:</td><td class="r-right" id="rCash"></td></tr>
-      <tr><td>Balance:</td><td class="r-right" id="rBal"></td></tr>
+      <tr><td>Paid (Cash):</td><td class="r-right" id="rCash"></td></tr>
+      <tr id="rBalRow"><td>Balance:</td><td class="r-right" id="rBal"></td></tr>
+      <tr id="rDueRow" class="r-bold" style="display:none;"><td>DUE (ණය):</td><td class="r-right" id="rDue"></td></tr>
     </table>
     <div class="r-line"></div>
     <div class="r-center">ස්තූතියි! නැවත එන්න.</div>
@@ -524,7 +533,6 @@
       renderQuickProducts(allProducts);
       renderStockTable(allProducts);
 
-      // අද දවසේ Sales Summary
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
@@ -566,20 +574,20 @@
     }
 
     // ==========================================
-    // BILL HISTORY FUNCTIONS
+    // BILL HISTORY & SETTLE DUE FUNCTIONS
     // ==========================================
     async function loadBillHistory() {
       const tbody = document.getElementById('historyTableBody');
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:20px;">Loading bills...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--muted); padding:20px;">Loading bills...</td></tr>';
 
       const { data, error } = await db
         .from('sales')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(200);
+        .limit(250);
 
       if (error) {
-        tbody.innerHTML = '<tr><td colspan="7" style="color:var(--danger);">Error: ' + error.message + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="color:var(--danger);">Error: ' + error.message + '</td></tr>';
         return;
       }
 
@@ -592,7 +600,7 @@
       const q = document.getElementById('histSearchInput').value.toLowerCase().trim();
 
       const filtered = allSalesHistory.filter(s => {
-        const billDate = new Date(s.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
+        const billDate = new Date(s.created_at).toLocaleDateString('en-CA');
         const matchDate = !dateVal || billDate === dateVal;
         const matchText = !q ||
           (s.invoice_no && s.invoice_no.toLowerCase().includes(q)) ||
@@ -604,6 +612,11 @@
       renderBillHistory(filtered);
     }
 
+    function filterOnlyDues() {
+      const dues = allSalesHistory.filter(s => Number(s.due_amount || 0) > 0);
+      renderBillHistory(dues);
+    }
+
     function resetHistoryFilters() {
       document.getElementById('histDateFilter').value = '';
       document.getElementById('histSearchInput').value = '';
@@ -613,23 +626,28 @@
     function renderBillHistory(list) {
       const tbody = document.getElementById('historyTableBody');
       if (list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:20px;">බිල්පත් හමු නොවීය</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--muted); padding:20px;">බිල්පත් හමු නොවීය</td></tr>';
         return;
       }
       tbody.innerHTML = list.map(s => {
         const dt = new Date(s.created_at).toLocaleString();
-        const isCredit = s.payment_method === 'Credit';
+        const due = Number(s.due_amount || 0);
+        const paid = s.paid_amount !== null && s.paid_amount !== undefined ? Number(s.paid_amount) : Number(s.net_total);
+        const hasDue = due > 0;
         return `
-          <tr>
+          <tr style="${hasDue ? 'background:rgba(239,68,68,0.08);' : ''}">
             <td style="font-weight:bold; color:var(--accent);">${s.invoice_no}</td>
             <td>${dt}</td>
-            <td style="color:${isCredit ? '#fbbf24' : 'var(--text)'}; font-weight:${isCredit ? 'bold' : 'normal'};">${s.payment_method}</td>
+            <td style="color:${hasDue ? '#fca5a5' : 'var(--accent)'}; font-weight:bold;">${s.payment_method}</td>
             <td>${s.customer_note || '-'}</td>
-            <td>Rs. ${Number(s.discount || 0).toFixed(2)}</td>
             <td style="font-weight:bold;">Rs. ${Number(s.net_total).toFixed(2)}</td>
+            <td>Rs. ${paid.toFixed(2)}</td>
+            <td style="color:${hasDue ? 'var(--danger)' : 'var(--muted)'}; font-weight:bold;">
+              ${hasDue ? 'Rs. ' + due.toFixed(2) : '0.00'}
+            </td>
             <td>
               <button onclick='viewBillDetails(${JSON.stringify(s)})' style="background:#3b82f6; color:#fff; border:none; border-radius:4px; padding:5px 10px; cursor:pointer; font-weight:bold;">
-                👁️ View / Print
+                👁️ View
               </button>
             </td>
           </tr>
@@ -638,9 +656,13 @@
     }
 
     async function viewBillDetails(sale) {
+      const due = Number(sale.due_amount || 0);
+      const paid = sale.paid_amount !== null && sale.paid_amount !== undefined ? Number(sale.paid_amount) : Number(sale.net_total);
+
       document.getElementById('bdTitle').innerText = "🧾 " + sale.invoice_no;
-      document.getElementById('bdMeta').innerText = "Date: " + new Date(sale.created_at).toLocaleString() + " | Payment: " + sale.payment_method + (sale.customer_note ? " (" + sale.customer_note + ")" : "");
+      document.getElementById('bdMeta').innerText = "Date: " + new Date(sale.created_at).toLocaleString() + " | Status: " + sale.payment_method + (sale.customer_note ? " (" + sale.customer_note + ")" : "");
       document.getElementById('bdItemsBody').innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading items...</td></tr>';
+      document.getElementById('bdSettleBox').style.display = due > 0 ? 'block' : 'none';
       document.getElementById('billDetailModal').style.display = 'flex';
 
       const { data: items, error } = await db
@@ -668,10 +690,32 @@
       document.getElementById('bdTotals').innerHTML = `
         <div style="display:flex; justify-content:space-between;"><span>Subtotal:</span><span>Rs. ${Number(sale.subtotal).toFixed(2)}</span></div>
         <div style="display:flex; justify-content:space-between;"><span>Discount:</span><span>Rs. ${Number(sale.discount || 0).toFixed(2)}</span></div>
-        <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--accent); font-size:1.1rem; margin-top:4px; border-top:1px solid var(--border); padding-top:4px;">
+        <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--accent); font-size:1.05rem; margin-top:4px; border-top:1px solid var(--border); padding-top:4px;">
           <span>NET TOTAL:</span><span>Rs. ${Number(sale.net_total).toFixed(2)}</span>
         </div>
+        <div style="display:flex; justify-content:space-between; margin-top:4px;"><span>Paid Amount:</span><span>Rs. ${paid.toFixed(2)}</span></div>
+        ${due > 0 ? `<div style="display:flex; justify-content:space-between; color:var(--danger); font-weight:bold;"><span>DUE (ණය මුදල):</span><span>Rs. ${due.toFixed(2)}</span></div>` : ''}
       `;
+    }
+
+    async function settleBillDue() {
+      if (!selectedBillForPrint) return;
+      const sale = selectedBillForPrint.sale;
+      if (!confirm("✅ '" + sale.customer_note + "' ගේ Rs. " + Number(sale.due_amount).toFixed(2) + " ක ණය මුදල ලැබුණු බව තහවුරු කරන්නද?")) return;
+
+      const { error } = await db.from('sales').update({
+        paid_amount: Number(sale.net_total),
+        due_amount: 0,
+        payment_method: 'Cash (Settled)'
+      }).eq('id', sale.id);
+
+      if (error) {
+        alert("Error: " + error.message);
+      } else {
+        alert("🎉 ණය මුදල සාර්ථකව පියවන ලදී!");
+        closeBillDetailModal();
+        await loadBillHistory();
+      }
     }
 
     function closeBillDetailModal() {
@@ -682,8 +726,18 @@
     function reprintSelectedBill() {
       if (!selectedBillForPrint) return;
       const { sale, items } = selectedBillForPrint;
+      const due = Number(sale.due_amount || 0);
+      const paid = sale.paid_amount !== null && sale.paid_amount !== undefined ? Number(sale.paid_amount) : Number(sale.net_total);
+
       document.getElementById('rInvNo').innerText = sale.invoice_no;
       document.getElementById('rDate').innerText = new Date(sale.created_at).toLocaleString();
+      if (sale.customer_note) {
+        document.getElementById('rCustRow').style.display = 'block';
+        document.getElementById('rCust').innerText = sale.customer_note;
+      } else {
+        document.getElementById('rCustRow').style.display = 'none';
+      }
+
       document.getElementById('rItemsBody').innerHTML = items.map(i => `
         <tr><td colspan="3">${i.name}</td></tr>
         <tr>
@@ -695,8 +749,17 @@
       document.getElementById('rSub').innerText = Number(sale.subtotal).toFixed(2);
       document.getElementById('rDisc').innerText = Number(sale.discount || 0).toFixed(2);
       document.getElementById('rNet').innerText = "Rs. " + Number(sale.net_total).toFixed(2);
-      document.getElementById('rCash').innerText = Number(sale.net_total).toFixed(2);
-      document.getElementById('rBal').innerText = "0.00";
+      document.getElementById('rCash').innerText = paid.toFixed(2);
+
+      if (due > 0) {
+        document.getElementById('rBalRow').style.display = 'none';
+        document.getElementById('rDueRow').style.display = 'table-row';
+        document.getElementById('rDue').innerText = "Rs. " + due.toFixed(2);
+      } else {
+        document.getElementById('rDueRow').style.display = 'none';
+        document.getElementById('rBalRow').style.display = 'table-row';
+        document.getElementById('rBal').innerText = Math.max(0, paid - Number(sale.net_total)).toFixed(2);
+      }
       window.print();
     }
 
@@ -840,6 +903,7 @@
       document.getElementById('inpDiscount').value = '';
       document.getElementById('inpCash').value = '';
       document.getElementById('inpCustNote').value = '';
+      document.getElementById('selPayment').value = 'Cash';
       renderCart();
     }
 
@@ -867,13 +931,30 @@
       const subtotal = cart.reduce((sum, item) => sum + (item.qty * item.price), 0);
       const discount = parseFloat(document.getElementById('inpDiscount').value) || 0;
       const netTotal = Math.max(0, subtotal - discount);
-      const cash = parseFloat(document.getElementById('inpCash').value) || 0;
-      const balance = cash > 0 ? (cash - netTotal) : 0;
+      const rawCash = document.getElementById('inpCash').value.trim();
+      const cash = parseFloat(rawCash) || 0;
+
+      const balTitle = document.getElementById('lblBalanceTitle');
+      const balLabel = document.getElementById('lblBalance');
+      let balance = 0;
+      let due = 0;
+
+      if (rawCash !== '' && cash < netTotal) {
+        due = netTotal - cash;
+        balTitle.innerText = "Due Amount (ණය මුදල):";
+        balLabel.style.color = "var(--danger)";
+        balLabel.innerText = "Rs. " + due.toFixed(2);
+      } else {
+        balance = cash > netTotal ? (cash - netTotal) : 0;
+        due = 0;
+        balTitle.innerText = "Balance (ඉතිරි මුදල):";
+        balLabel.style.color = "#fbbf24";
+        balLabel.innerText = "Rs. " + balance.toFixed(2);
+      }
 
       document.getElementById('lblSubtotal').innerText = "Rs. " + subtotal.toFixed(2);
       document.getElementById('lblNetTotal').innerText = "Rs. " + netTotal.toFixed(2);
-      document.getElementById('lblBalance').innerText = "Rs. " + balance.toFixed(2);
-      return { subtotal, discount, netTotal, cash, balance };
+      return { subtotal, discount, netTotal, cash, balance, due, rawCash };
     }
 
     async function checkout(shouldPrint) {
@@ -882,8 +963,30 @@
         return;
       }
       const totals = recalcTotals();
-      const paymentMethod = document.getElementById('selPayment').value;
+      let paymentMethod = document.getElementById('selPayment').value;
       const customerNote = document.getElementById('inpCustNote').value.trim();
+
+      // 1. Cash තෝරා ඇති විට කිසිවක් ටයිප් කර නැත්නම්
+      if (paymentMethod === 'Cash' && totals.rawCash === '') {
+        alert("⚠️ කරුණාකර පාරිභෝගිකයා දුන් මුදල (Cash Given) ඇතුළත් කරන්න!\n(සම්පූර්ණයෙන්ම ණයට නම් Payment = Credit තෝරන්න)");
+        document.getElementById('inpCash').focus();
+        return;
+      }
+
+      // 2. සම්පූර්ණයෙන්ම Credit නම්
+      if (paymentMethod === 'Credit') {
+        totals.due = Math.max(0, totals.netTotal - totals.cash);
+      }
+
+      // 3. ණය මුදලක් ඇත්නම් (Partial Credit හෝ Full Credit) නම අනිවාර්ය කිරීම
+      if (totals.due > 0) {
+        if (!customerNote) {
+          alert("⚠️ Rs. " + totals.due.toFixed(2) + " ක ණය මුදලක් ඇති බැවින්, පාරිභෝගිකයාගේ නම ඇතුළත් කිරීම අනිවාර්ය වේ!");
+          document.getElementById('inpCustNote').focus();
+          return;
+        }
+        paymentMethod = totals.cash > 0 ? 'Partial Credit' : 'Credit';
+      }
 
       const btn1 = document.getElementById('btnSaveOnly');
       const btn2 = document.getElementById('btnSavePrint');
@@ -922,6 +1025,8 @@
           discount: totals.discount,
           net_total: totals.netTotal,
           total_profit: totalProfit,
+          paid_amount: totals.cash,
+          due_amount: totals.due,
           payment_method: paymentMethod,
           customer_note: customerNote
         }]);
@@ -936,7 +1041,7 @@
         }
 
         if (shouldPrint) {
-          prepareAndPrint58mm(invNo, dateTimeStr, totals);
+          prepareAndPrint58mm(invNo, dateTimeStr, totals, customerNote);
         } else {
           alert("✅ බිල් එක සාර්ථකව Save විය! (" + invNo + ")");
         }
@@ -952,9 +1057,16 @@
       }
     }
 
-    function prepareAndPrint58mm(invNo, dateTime, totals) {
+    function prepareAndPrint58mm(invNo, dateTime, totals, customerNote) {
       document.getElementById('rInvNo').innerText = invNo;
       document.getElementById('rDate').innerText = dateTime;
+      if (customerNote) {
+        document.getElementById('rCustRow').style.display = 'block';
+        document.getElementById('rCust').innerText = customerNote;
+      } else {
+        document.getElementById('rCustRow').style.display = 'none';
+      }
+
       document.getElementById('rItemsBody').innerHTML = cart.map(i => `
         <tr><td colspan="3">${i.name}</td></tr>
         <tr>
@@ -967,7 +1079,16 @@
       document.getElementById('rDisc').innerText = totals.discount.toFixed(2);
       document.getElementById('rNet').innerText = "Rs. " + totals.netTotal.toFixed(2);
       document.getElementById('rCash').innerText = totals.cash.toFixed(2);
-      document.getElementById('rBal').innerText = totals.balance.toFixed(2);
+
+      if (totals.due > 0) {
+        document.getElementById('rBalRow').style.display = 'none';
+        document.getElementById('rDueRow').style.display = 'table-row';
+        document.getElementById('rDue').innerText = "Rs. " + totals.due.toFixed(2);
+      } else {
+        document.getElementById('rDueRow').style.display = 'none';
+        document.getElementById('rBalRow').style.display = 'table-row';
+        document.getElementById('rBal').innerText = totals.balance.toFixed(2);
+      }
 
       window.print();
     }
