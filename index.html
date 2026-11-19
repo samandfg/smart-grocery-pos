@@ -20,6 +20,16 @@
     * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
     body { margin: 0; background: var(--bg); color: var(--text); }
 
+    /* Number Input වල උඩ-පහළ යවන ඊතල (Arrows) ඉවත් කිරීම */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+
     /* Navigation Tabs */
     .navbar {
       display: flex; justify-content: space-between; align-items: center;
@@ -104,9 +114,10 @@
       padding: 10px 0; margin: 10px 0;
     }
     .num-input {
-      width: 115px; padding: 6px 8px; background: var(--card); border: 1px solid var(--border);
-      color: #fff; border-radius: 4px; text-align: right; font-size: 1rem; font-weight: bold;
+      width: 115px; padding: 7px 10px; background: var(--card); border: 1px solid var(--border);
+      color: #fff; border-radius: 4px; text-align: right; font-size: 1.05rem; font-weight: bold;
     }
+    .num-input:focus { border-color: var(--accent); outline: none; }
 
     .action-btns { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 14px; }
     .btn-primary {
@@ -139,7 +150,7 @@
     }
     .modal-box {
       background: var(--card); border: 2px solid var(--accent); border-radius: 12px;
-      padding: 20px; width: 92%; max-width: 470px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      padding: 20px; width: 92%; max-width: 480px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
       max-height: 90vh; overflow-y: auto;
     }
     .batch-btn {
@@ -175,10 +186,10 @@
   <div class="navbar">
     <div class="brand">⚡ Smart Grocery POS (Cloud)</div>
     <div class="nav-btns">
-      <button class="active" onclick="switchTab('pos', this)">🧾 Billing</button>
-      <button onclick="switchTab('history', this)">📜 Bill History</button>
-      <button onclick="switchTab('stock', this)">📦 Stock / Items</button>
-      <button onclick="switchTab('dash', this)">📊 Dashboard</button>
+      <button id="navBtn-pos" class="active" onclick="switchTab('pos', this)">🧾 Billing</button>
+      <button id="navBtn-history" onclick="switchTab('history', this)">📜 Bill History</button>
+      <button id="navBtn-stock" onclick="switchTab('stock', this)">📦 Stock / Items</button>
+      <button id="navBtn-dash" onclick="switchTab('dash', this)">📊 Dashboard</button>
     </div>
   </div>
 
@@ -198,6 +209,9 @@
           <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:8px;">
             <h3 style="margin:0;">🧾 Current Bill (<span id="lblItemCount">0</span>)</h3>
             <button onclick="clearCart()" style="background:transparent; border:1px solid var(--danger); color:var(--danger); border-radius:5px; padding:4px 10px; cursor:pointer; font-weight:bold;">Clear All</button>
+          </div>
+          <div id="editBanner" style="display:none; background:rgba(245,158,11,0.2); border:1px solid #f59e0b; color:#fcd34d; padding:6px 10px; border-radius:6px; margin-top:8px; font-size:0.85rem;">
+            ✏️ පැරණි බිලක් සංස්කරණය කරමින් පවතී — අවශ්‍ය වෙනස්කම් කර Save කරන්න.
           </div>
           <div class="bill-scroll">
             <table>
@@ -226,7 +240,7 @@
             </div>
             <div class="tot-row">
               <span>Discount (වට්ටම් Rs.):</span>
-              <input type="number" id="inpDiscount" class="num-input" placeholder="0" min="0" oninput="recalcTotals()">
+              <input type="number" id="inpDiscount" class="num-input" placeholder="0" min="0" oninput="recalcTotals()" onwheel="this.blur()">
             </div>
             <div class="tot-row grand">
               <span>TOTAL:</span>
@@ -234,7 +248,7 @@
             </div>
             <div class="tot-row">
               <span>Cash Given (දුන් මුදල):</span>
-              <input type="number" id="inpCash" class="num-input" placeholder="0" oninput="recalcTotals()" onkeydown="if(event.key==='Enter'){ event.preventDefault(); checkout(true); }">
+              <input type="number" id="inpCash" class="num-input" placeholder="0" oninput="recalcTotals()" onwheel="this.blur()" onkeydown="if(event.key==='Enter'){ event.preventDefault(); checkout(true); }">
             </div>
             <div class="tot-row" style="color: #fbbf24; font-weight: bold; font-size: 1.1rem; margin-top:10px;">
               <span id="lblBalanceTitle">Balance (ඉතිරි මුදල):</span>
@@ -316,15 +330,15 @@
           </div>
           <div class="form-group">
             <label>ගත් මිල (Cost Price) *</label>
-            <input type="number" id="pCost" placeholder="0.00">
+            <input type="number" id="pCost" placeholder="0.00" onwheel="this.blur()">
           </div>
           <div class="form-group">
             <label>විකුණුම් මිල (Selling Price) *</label>
-            <input type="number" id="pPrice" placeholder="0.00">
+            <input type="number" id="pPrice" placeholder="0.00" onwheel="this.blur()">
           </div>
           <div class="form-group">
             <label>එකතු කරන තොගය (Stock Qty) *</label>
-            <input type="number" id="pStock" step="0.01" placeholder="0">
+            <input type="number" id="pStock" step="0.01" placeholder="0" onwheel="this.blur()">
           </div>
         </div>
         <button class="btn-primary" style="margin-top:12px;" onclick="saveNewProduct()">Save Product / Add Stock</button>
@@ -374,7 +388,7 @@
     </div>
   </div>
 
-  <!-- BILL DETAILS & RE-PRINT / SETTLE DUE MODAL -->
+  <!-- BILL DETAILS, RE-PRINT, SETTLE DUE & ADMIN EDIT/VOID MODAL -->
   <div id="billDetailModal" class="modal-overlay">
     <div class="modal-box">
       <h3 style="margin-top:0; color:var(--accent);" id="bdTitle">Invoice Details</h3>
@@ -390,12 +404,30 @@
         </thead>
         <tbody id="bdItemsBody"></tbody>
       </table>
-      <div id="bdTotals" style="background:#0f172a; padding:10px; border-radius:8px; font-size:0.95rem; margin-bottom:14px;"></div>
-      <div id="bdSettleBox" style="display:none; margin-bottom:12px;">
-        <button onclick="settleBillDue()" style="width:100%; padding:11px; background:#f59e0b; color:#000; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.95rem;">
+      <div id="bdTotals" style="background:#0f172a; padding:10px; border-radius:8px; font-size:0.95rem; margin-bottom:12px;"></div>
+      
+      <!-- Settle Due Button -->
+      <div id="bdSettleBox" style="display:none; margin-bottom:10px;">
+        <button onclick="settleBillDue()" style="width:100%; padding:10px; background:#f59e0b; color:#000; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.95rem;">
           ✅ ණය මුදල පියවන්න (Mark Due as Paid)
         </button>
       </div>
+
+      <!-- Admin Edit / Void Bill Security Section -->
+      <div id="bdAdminSection" style="border-top:1px dashed var(--border); padding-top:10px; margin-bottom:12px;">
+        <button id="btnUnlockBillAdmin" onclick="unlockBillAdminActions()" style="width:100%; padding:8px; background:#334155; color:#fff; border:1px solid #475569; border-radius:6px; cursor:pointer; font-size:0.88rem; font-weight:bold;">
+          🔐 Admin: බිල නිවැරදි කරන්න / අවලංගු කරන්න (Edit / Void)
+        </button>
+        <div id="bdAdminActions" style="display:none; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+          <button onclick="editBillInPOS()" style="padding:9px; background:#0284c7; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.88rem;">
+            ✏️ Edit Bill in POS
+          </button>
+          <button onclick="voidBillOnly()" style="padding:9px; background:var(--danger); color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.88rem;">
+            🗑️ Void / Cancel Bill
+          </button>
+        </div>
+      </div>
+
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
         <button onclick="closeBillDetailModal()" style="padding:10px; background:transparent; border:1px solid var(--danger); color:var(--danger); border-radius:6px; cursor:pointer; font-weight:bold;">Close</button>
         <button onclick="reprintSelectedBill()" class="btn-primary" style="padding:10px;">🖨️ Re-Print (58mm)</button>
@@ -425,15 +457,15 @@
       </div>
       <div class="form-group" style="margin-bottom:8px;">
         <label>ගත් මිල (Cost Price)</label>
-        <input type="number" id="editCost">
+        <input type="number" id="editCost" onwheel="this.blur()">
       </div>
       <div class="form-group" style="margin-bottom:8px;">
         <label>විකුණුම් මිල (Selling Price)</label>
-        <input type="number" id="editPrice">
+        <input type="number" id="editPrice" onwheel="this.blur()">
       </div>
       <div class="form-group" style="margin-bottom:12px;">
         <label>දැනට තියෙන තොගය (Current Stock)</label>
-        <input type="number" id="editStock" step="0.01">
+        <input type="number" id="editStock" step="0.01" onwheel="this.blur()">
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
         <button onclick="closeEditModal()" style="padding:10px; background:transparent; border:1px solid var(--danger); color:var(--danger); border-radius:6px; cursor:pointer; font-weight:bold;">Cancel</button>
@@ -533,30 +565,37 @@
       renderQuickProducts(allProducts);
       renderStockTable(allProducts);
 
+      // අද දවසේ Sales Summary (VOIDED බිල් හැර)
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
       const { data: salesData } = await db
         .from('sales')
-        .select('net_total, total_profit')
+        .select('net_total, total_profit, payment_method')
         .gte('created_at', todayStart.toISOString());
 
-      let todaySales = 0, todayProfit = 0;
+      let todaySales = 0, todayProfit = 0, validBillsCount = 0;
       (salesData || []).forEach(s => {
+        if (s.payment_method && s.payment_method.startsWith('VOIDED')) return;
         todaySales += Number(s.net_total) || 0;
         todayProfit += Number(s.total_profit) || 0;
+        validBillsCount++;
       });
 
       document.getElementById('dSales').innerText = "Rs. " + todaySales.toFixed(2);
       document.getElementById('dProfit').innerText = "Rs. " + todayProfit.toFixed(2);
-      document.getElementById('dBills').innerText = (salesData || []).length;
+      document.getElementById('dBills').innerText = validBillsCount;
     }
 
     function switchTab(tabId, btn) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-btns button').forEach(b => b.classList.remove('active'));
       document.getElementById('tab-' + tabId).classList.add('active');
-      btn.classList.add('active');
+      if (btn) btn.classList.add('active');
+      else {
+        const autoBtn = document.getElementById('navBtn-' + tabId);
+        if (autoBtn) autoBtn.classList.add('active');
+      }
       
       if (tabId !== 'stock' && isAdminUnlocked) {
         isAdminUnlocked = false;
@@ -574,7 +613,7 @@
     }
 
     // ==========================================
-    // BILL HISTORY & SETTLE DUE FUNCTIONS
+    // BILL HISTORY, SETTLE DUE & ADMIN EDIT/VOID
     // ==========================================
     async function loadBillHistory() {
       const tbody = document.getElementById('historyTableBody');
@@ -613,7 +652,7 @@
     }
 
     function filterOnlyDues() {
-      const dues = allSalesHistory.filter(s => Number(s.due_amount || 0) > 0);
+      const dues = allSalesHistory.filter(s => Number(s.due_amount || 0) > 0 && !(s.payment_method && s.payment_method.startsWith('VOIDED')));
       renderBillHistory(dues);
     }
 
@@ -631,14 +670,15 @@
       }
       tbody.innerHTML = list.map(s => {
         const dt = new Date(s.created_at).toLocaleString();
-        const due = Number(s.due_amount || 0);
+        const isVoided = s.payment_method && s.payment_method.startsWith('VOIDED');
+        const due = isVoided ? 0 : Number(s.due_amount || 0);
         const paid = s.paid_amount !== null && s.paid_amount !== undefined ? Number(s.paid_amount) : Number(s.net_total);
         const hasDue = due > 0;
         return `
-          <tr style="${hasDue ? 'background:rgba(239,68,68,0.08);' : ''}">
-            <td style="font-weight:bold; color:var(--accent);">${s.invoice_no}</td>
+          <tr style="${isVoided ? 'opacity:0.5; text-decoration:line-through;' : (hasDue ? 'background:rgba(239,68,68,0.08);' : '')}">
+            <td style="font-weight:bold; color:${isVoided ? 'var(--muted)' : 'var(--accent)'};">${s.invoice_no}</td>
             <td>${dt}</td>
-            <td style="color:${hasDue ? '#fca5a5' : 'var(--accent)'}; font-weight:bold;">${s.payment_method}</td>
+            <td style="color:${isVoided ? 'var(--danger)' : (hasDue ? '#fca5a5' : 'var(--accent)')}; font-weight:bold;">${s.payment_method}</td>
             <td>${s.customer_note || '-'}</td>
             <td style="font-weight:bold;">Rs. ${Number(s.net_total).toFixed(2)}</td>
             <td>Rs. ${paid.toFixed(2)}</td>
@@ -656,13 +696,20 @@
     }
 
     async function viewBillDetails(sale) {
-      const due = Number(sale.due_amount || 0);
+      const isVoided = sale.payment_method && sale.payment_method.startsWith('VOIDED');
+      const due = isVoided ? 0 : Number(sale.due_amount || 0);
       const paid = sale.paid_amount !== null && sale.paid_amount !== undefined ? Number(sale.paid_amount) : Number(sale.net_total);
 
       document.getElementById('bdTitle').innerText = "🧾 " + sale.invoice_no;
       document.getElementById('bdMeta').innerText = "Date: " + new Date(sale.created_at).toLocaleString() + " | Status: " + sale.payment_method + (sale.customer_note ? " (" + sale.customer_note + ")" : "");
       document.getElementById('bdItemsBody').innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading items...</td></tr>';
       document.getElementById('bdSettleBox').style.display = due > 0 ? 'block' : 'none';
+      
+      // Reset Admin Edit/Void lock each time modal opens
+      document.getElementById('bdAdminSection').style.display = isVoided ? 'none' : 'block';
+      document.getElementById('btnUnlockBillAdmin').style.display = 'block';
+      document.getElementById('bdAdminActions').style.display = 'none';
+
       document.getElementById('billDetailModal').style.display = 'flex';
 
       const { data: items, error } = await db
@@ -696,6 +743,108 @@
         <div style="display:flex; justify-content:space-between; margin-top:4px;"><span>Paid Amount:</span><span>Rs. ${paid.toFixed(2)}</span></div>
         ${due > 0 ? `<div style="display:flex; justify-content:space-between; color:var(--danger); font-weight:bold;"><span>DUE (ණය මුදල):</span><span>Rs. ${due.toFixed(2)}</span></div>` : ''}
       `;
+    }
+
+    function unlockBillAdminActions() {
+      const pin = prompt("🔐 බිලක් වෙනස් කිරීමට හෝ අවලංගු කිරීමට Admin PIN අංකය ඇතුළත් කරන්න:");
+      if (pin === ADMIN_PIN) {
+        document.getElementById('btnUnlockBillAdmin').style.display = 'none';
+        document.getElementById('bdAdminActions').style.display = 'grid';
+      } else if (pin !== null) {
+        alert("❌ Admin PIN අංකය වැරදියි!");
+      }
+    }
+
+    // 1. පැරණි බිල VOID කර එහි Stock ආපසු එකතු කර, භාණ්ඩ ටික POS Cart එකට Load කිරීම
+    async function editBillInPOS() {
+      if (!selectedBillForPrint) return;
+      const { sale, items } = selectedBillForPrint;
+
+      if (!confirm("⚠️ '" + sale.invoice_no + "' බිල අවලංගු (VOID) කර එහි භාණ්ඩ නැවත Billing තිරයට ගෙන නිවැරදි කරන්නද?\n\n(මෙම බිලේ තිබූ භාණ්ඩවල තොගය ස්වයංක්‍රීයව Stock එකට නැවත එකතු වේ.)")) {
+        return;
+      }
+
+      try {
+        // 1. Stock නැවත එකතු කිරීම
+        for (const item of items) {
+          const prod = allProducts.find(p => p.barcode === item.barcode && p.price === Number(item.price)) ||
+                       allProducts.find(p => p.barcode === item.barcode);
+          if (prod) {
+            const restoredStock = Number((prod.stock + Number(item.qty)).toFixed(3));
+            await db.from('products').update({ stock: restoredStock }).eq('id', prod.id);
+          }
+        }
+
+        // 2. පරණ බිල VOIDED (Edited) ලෙස Mark කිරීම (Audit Trail ආරක්ෂාව)
+        await db.from('sales').update({
+          payment_method: 'VOIDED (Edited)',
+          due_amount: 0
+        }).eq('id', sale.id);
+
+        // 3. නව Stock දත්ත Load කර POS Cart එකට භාණ්ඩ දැමීම
+        await loadData();
+        cart = [];
+        for (const item of items) {
+          const prod = allProducts.find(p => p.barcode === item.barcode && p.price === Number(item.price)) ||
+                       allProducts.find(p => p.barcode === item.barcode);
+          if (prod) {
+            cart.push({
+              id: prod.id,
+              barcode: prod.barcode,
+              name: prod.name,
+              unit: prod.unit,
+              cost: prod.cost,
+              price: Number(item.price),
+              maxStock: prod.stock,
+              qty: Number(item.qty)
+            });
+          }
+        }
+
+        document.getElementById('inpDiscount').value = Number(sale.discount || 0) > 0 ? Number(sale.discount) : '';
+        document.getElementById('inpCustNote').value = sale.customer_note || '';
+        document.getElementById('editBanner').style.display = 'block';
+
+        closeBillDetailModal();
+        switchTab('pos');
+        renderCart();
+        alert("✅ පැරණි බිල අවලංගු කර Stock නැවත එකතු කරන ලදී. දැන් වැරදි භාණ්ඩය ඉවත් කර බිල Save කරන්න!");
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    }
+
+    // 2. මුළු බිලම VOID / Cancel කිරීම (Stock ආපසු එකතු කිරීම සමඟ)
+    async function voidBillOnly() {
+      if (!selectedBillForPrint) return;
+      const { sale, items } = selectedBillForPrint;
+
+      if (!confirm("🚨 අවවාදයයි: '" + sale.invoice_no + "' බිල සම්පූර්ණයෙන්ම අවලංගු (VOID) කර එහි සියලුම භාණ්ඩ Stock එකට නැවත එකතු කරන්නද?")) {
+        return;
+      }
+
+      try {
+        for (const item of items) {
+          const prod = allProducts.find(p => p.barcode === item.barcode && p.price === Number(item.price)) ||
+                       allProducts.find(p => p.barcode === item.barcode);
+          if (prod) {
+            const restoredStock = Number((prod.stock + Number(item.qty)).toFixed(3));
+            await db.from('products').update({ stock: restoredStock }).eq('id', prod.id);
+          }
+        }
+
+        await db.from('sales').update({
+          payment_method: 'VOIDED (Cancelled)',
+          due_amount: 0
+        }).eq('id', sale.id);
+
+        alert("✅ බිල සාර්ථකව අවලංගු (VOID) කර Stock යාවත්කාලීන කරන ලදී!");
+        closeBillDetailModal();
+        await loadData();
+        await loadBillHistory();
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
     }
 
     async function settleBillDue() {
@@ -904,6 +1053,7 @@
       document.getElementById('inpCash').value = '';
       document.getElementById('inpCustNote').value = '';
       document.getElementById('selPayment').value = 'Cash';
+      document.getElementById('editBanner').style.display = 'none';
       renderCart();
     }
 
@@ -918,7 +1068,7 @@
       tbody.innerHTML = cart.map((item, idx) => `
         <tr>
           <td>${item.name}<br><small style="color:var(--muted);">${item.unit}</small></td>
-          <td><input type="number" class="qty-input" step="${item.unit === 'Kg' ? '0.05' : '1'}" value="${item.qty}" onchange="updateQty(${idx}, this.value)"></td>
+          <td><input type="number" class="qty-input" step="${item.unit === 'Kg' ? '0.05' : '1'}" value="${item.qty}" onwheel="this.blur()" onchange="updateQty(${idx}, this.value)"></td>
           <td>${item.price.toFixed(2)}</td>
           <td>${(item.qty * item.price).toFixed(2)}</td>
           <td><button class="btn-del" onclick="removeCartItem(${idx})">✕</button></td>
@@ -966,19 +1116,16 @@
       let paymentMethod = document.getElementById('selPayment').value;
       const customerNote = document.getElementById('inpCustNote').value.trim();
 
-      // 1. Cash තෝරා ඇති විට කිසිවක් ටයිප් කර නැත්නම්
       if (paymentMethod === 'Cash' && totals.rawCash === '') {
         alert("⚠️ කරුණාකර පාරිභෝගිකයා දුන් මුදල (Cash Given) ඇතුළත් කරන්න!\n(සම්පූර්ණයෙන්ම ණයට නම් Payment = Credit තෝරන්න)");
         document.getElementById('inpCash').focus();
         return;
       }
 
-      // 2. සම්පූර්ණයෙන්ම Credit නම්
       if (paymentMethod === 'Credit') {
         totals.due = Math.max(0, totals.netTotal - totals.cash);
       }
 
-      // 3. ණය මුදලක් ඇත්නම් (Partial Credit හෝ Full Credit) නම අනිවාර්ය කිරීම
       if (totals.due > 0) {
         if (!customerNote) {
           alert("⚠️ Rs. " + totals.due.toFixed(2) + " ක ණය මුදලක් ඇති බැවින්, පාරිභෝගිකයාගේ නම ඇතුළත් කිරීම අනිවාර්ය වේ!");
@@ -1093,7 +1240,7 @@
       window.print();
     }
 
-    // ADMIN MODE (EDIT & DELETE)
+    // ADMIN MODE (EDIT & DELETE PRODUCTS)
     function toggleAdminMode() {
       if (!isAdminUnlocked) {
         const pin = prompt("🔐 Admin රහස් අංකය (PIN) ඇතුළත් කරන්න:");
