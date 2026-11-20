@@ -192,17 +192,31 @@
     }
     .batch-btn:hover { border-color: var(--accent); background: #16243b; }
 
-    /* 58mm THERMAL RECEIPT PRINT STYLES */
+    /* 58mm THERMAL RECEIPT & A4 REPORT PRINT STYLES */
     #receipt-area { display: none; }
     @media print {
       body * { visibility: hidden; }
-      #receipt-area, #receipt-area * { visibility: visible; }
-      #receipt-area {
+      body.print-report-mode #reportPrintArea,
+      body.print-report-mode #reportPrintArea * {
+        visibility: visible;
+      }
+      body.print-report-mode #reportPrintArea {
+        position: absolute; left: 0; top: 0; width: 100%;
+        background: #fff; color: #000; padding: 15px;
+      }
+      body.print-report-mode #reportPrintArea th,
+      body.print-report-mode #reportPrintArea td {
+        color: #000 !important; border: 1px solid #94a3b8 !important; padding: 6px;
+      }
+      body:not(.print-report-mode) #receipt-area,
+      body:not(.print-report-mode) #receipt-area * {
+        visibility: visible;
+      }
+      body:not(.print-report-mode) #receipt-area {
         display: block; position: absolute; left: 0; top: 0;
         width: 58mm; padding: 2mm; background: #fff; color: #000;
         font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.3;
       }
-      @page { size: 58mm auto; margin: 0; }
     }
     .r-center { text-align: center; }
     .r-bold { font-weight: bold; }
@@ -505,6 +519,40 @@
           </div>
         </div>
       </div>
+	  <!-- ROW 4: DETAILED BUSINESS REPORTS (EXCEL / PRINT) -->
+        <div class="panel" style="margin-top:18px; border-color: var(--accent);">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+            <h3 style="margin:0; color:var(--accent);">📑 ව්‍යාපාරික වාර්තා (Detailed Business Reports)</h3>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <select id="repType" onchange="onReportTypeChange()" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff; font-weight:bold;">
+                <option value="daily">📅 1. දිනෙන් දින විකුණුම් වාර්තාව (Daily Sales Breakdown)</option>
+                <option value="items">📦 2. භාණ්ඩ අනුව විකුණුම් සහ ලාභය (Item-wise Sales & Profit)</option>
+                <option value="dues">⚠️ 3. ණයගැතියන්ගේ වාර්තාව (Customer Dues Report)</option>
+                <option value="stock">🏪 4. වත්මන් තොග වටිනාකම සහ Low Stock (Stock Valuation)</option>
+              </select>
+              <div id="repDateInputs" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <input type="date" id="repFromDate" style="padding:8px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff;">
+                <span style="color:var(--muted);">සිට</span>
+                <input type="date" id="repToDate" style="padding:8px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff;">
+              </div>
+              <button class="btn-primary" style="padding:8px 14px; font-size:0.92rem;" onclick="generateBusinessReport()">📊 Generate Report</button>
+              <button onclick="exportReportToCSV()" style="background:#059669; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">📥 Excel (CSV)</button>
+              <button onclick="printBusinessReport()" style="background:#3b82f6; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">🖨️ Print</button>
+            </div>
+          </div>
+
+          <div id="reportPrintArea">
+            <div id="repHeaderTitle" style="font-weight:bold; font-size:1.05rem; margin-bottom:8px; color:#fbbf24;"></div>
+            <div style="overflow-x:auto;">
+              <table id="repDataTable">
+                <thead id="repTableHead"></thead>
+                <tbody id="repTableBody">
+                  <tr><td style="color:var(--muted); text-align:center; padding:20px;">ඉහත Report වර්ගය තෝරා 'Generate Report' ඔබන්න.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
     </div>
   </div>
 
@@ -851,6 +899,289 @@
       document.getElementById('rProfit').innerText = "Rs. " + rProfit.toFixed(2);
       document.getElementById('rBills').innerText = rBills;
       document.getElementById('rDues').innerText = "Rs. " + rDues.toFixed(2);
+    }
+	// ==========================================
+    // DETAILED BUSINESS REPORTS (CSV & PRINT)
+    // ==========================================
+    let currentReportCSVRows = [];
+    let currentReportFilename = "POS_Report.csv";
+
+    function onReportTypeChange() {
+      const type = document.getElementById('repType').value;
+      const dateDiv = document.getElementById('repDateInputs');
+      // ණය වාර්තාවට සහ වත්මන් Stock වාර්තාවට දින පරාසයක් අවශ්‍ය නැත
+      dateDiv.style.display = (type === 'dues' || type === 'stock') ? 'none' : 'flex';
+    }
+
+    async function generateBusinessReport() {
+      if (!isCurrentUserAdmin) return;
+      const type = document.getElementById('repType').value;
+      const now = new Date();
+      const todayStr = now.toLocaleDateString('en-CA');
+      const monthFirstStr = new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA');
+
+      if (!document.getElementById('repFromDate').value) document.getElementById('repFromDate').value = monthFirstStr;
+      if (!document.getElementById('repToDate').value) document.getElementById('repToDate').value = todayStr;
+
+      const fromVal = document.getElementById('repFromDate').value;
+      const toVal = document.getElementById('repToDate').value;
+      const startDate = new Date(fromVal + "T00:00:00");
+      const endDate = new Date(toVal + "T23:59:59");
+
+      const thead = document.getElementById('repTableHead');
+      const tbody = document.getElementById('repTableBody');
+      const titleEl = document.getElementById('repHeaderTitle');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px;">Generating report...</td></tr>';
+      currentReportCSVRows = [];
+
+      // 1. DAILY SALES BREAKDOWN REPORT
+      if (type === 'daily') {
+        titleEl.innerText = `📅 දිනෙන් දින විකුණුම් වාර්තාව (${fromVal} සිට ${toVal} දක්වා)`;
+        currentReportFilename = `Daily_Sales_${fromVal}_to_${toVal}.csv`;
+
+        const { data, error } = await db
+          .from('sales')
+          .select('created_at, net_total, discount, total_profit, paid_amount, due_amount, payment_method')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString())
+          .order('created_at', { ascending: true });
+
+        if (error) { alert("Error: " + error.message); return; }
+
+        const dailyMap = {};
+        (data || []).forEach(s => {
+          if (s.payment_method && s.payment_method.startsWith('VOIDED')) return;
+          const dKey = new Date(s.created_at).toLocaleDateString('en-CA');
+          if (!dailyMap[dKey]) dailyMap[dKey] = { bills: 0, sales: 0, discount: 0, profit: 0, due: 0 };
+          dailyMap[dKey].bills++;
+          dailyMap[dKey].sales += Number(s.net_total) || 0;
+          dailyMap[dKey].discount += Number(s.discount) || 0;
+          dailyMap[dKey].profit += Number(s.total_profit) || 0;
+          dailyMap[dKey].due += Number(s.due_amount) || 0;
+        });
+
+        thead.innerHTML = `<tr><th>දිනය (Date)</th><th>බිල් ගණන</th><th>වට්ටම් (Discount)</th><th>මුළු විකුණුම් (Sales)</th><th>ශුද්ධ ලාභය (Profit)</th><th>ණය (Due)</th></tr>`;
+        currentReportCSVRows.push(["Date", "Bills", "Discount", "Net Sales", "Net Profit", "Due Amount"]);
+
+        const dates = Object.keys(dailyMap);
+        if (dates.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted);">මෙම කාලය තුළ දත්ත නොමැත</td></tr>';
+          return;
+        }
+
+        let totBills = 0, totDisc = 0, totSales = 0, totProf = 0, totDue = 0;
+        tbody.innerHTML = dates.map(d => {
+          const r = dailyMap[d];
+          totBills += r.bills; totDisc += r.discount; totSales += r.sales; totProf += r.profit; totDue += r.due;
+          currentReportCSVRows.push([d, r.bills, r.discount.toFixed(2), r.sales.toFixed(2), r.profit.toFixed(2), r.due.toFixed(2)]);
+          return `<tr>
+            <td style="font-weight:bold;">${d}</td>
+            <td>${r.bills}</td>
+            <td>Rs. ${r.discount.toFixed(2)}</td>
+            <td style="color:var(--accent); font-weight:bold;">Rs. ${r.sales.toFixed(2)}</td>
+            <td style="color:#38bdf8; font-weight:bold;">Rs. ${r.profit.toFixed(2)}</td>
+            <td style="color:${r.due > 0 ? 'var(--danger)' : 'var(--muted)'};">Rs. ${r.due.toFixed(2)}</td>
+          </tr>`;
+        }).join('') + `
+          <tr style="background:#0f172a; font-weight:bold; border-top:2px solid var(--accent);">
+            <td>TOTAL (මුළු එකතුව)</td>
+            <td>${totBills}</td>
+            <td>Rs. ${totDisc.toFixed(2)}</td>
+            <td style="color:var(--accent);">Rs. ${totSales.toFixed(2)}</td>
+            <td style="color:#38bdf8;">Rs. ${totProf.toFixed(2)}</td>
+            <td style="color:var(--danger);">Rs. ${totDue.toFixed(2)}</td>
+          </tr>`;
+        currentReportCSVRows.push(["TOTAL", totBills, totDisc.toFixed(2), totSales.toFixed(2), totProf.toFixed(2), totDue.toFixed(2)]);
+      }
+
+      // 2. ITEM-WISE SALES & PROFIT REPORT
+      else if (type === 'items') {
+        titleEl.innerText = `📦 භාණ්ඩ අනුව විකුණුම් සහ ලාභය (${fromVal} සිට ${toVal} දක්වා)`;
+        currentReportFilename = `Item_Sales_${fromVal}_to_${toVal}.csv`;
+
+        // Void නොවූ valid invoices ලබාගැනීම
+        const { data: validSales } = await db
+          .from('sales')
+          .select('invoice_no, payment_method')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString());
+
+        const validInvSet = new Set(
+          (validSales || [])
+            .filter(s => !(s.payment_method && s.payment_method.startsWith('VOIDED')))
+            .map(s => s.invoice_no)
+        );
+
+        const { data: itemsData, error } = await db
+          .from('sale_items')
+          .select('invoice_no, barcode, name, qty, line_total, line_profit')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString());
+
+        if (error) { alert("Error: " + error.message); return; }
+
+        const itemMap = {};
+        (itemsData || []).forEach(it => {
+          if (!validInvSet.has(it.invoice_no)) return;
+          const key = it.barcode + "_" + it.name;
+          if (!itemMap[key]) itemMap[key] = { barcode: it.barcode, name: it.name, qty: 0, total: 0, profit: 0 };
+          itemMap[key].qty += Number(it.qty) || 0;
+          itemMap[key].total += Number(it.line_total) || 0;
+          itemMap[key].profit += Number(it.line_profit) || 0;
+        });
+
+        const sortedItems = Object.values(itemMap).sort((a, b) => b.total - a.total);
+        thead.innerHTML = `<tr><th>Code</th><th>භාණ්ඩයේ නම (Item)</th><th>විකිණූ ප්‍රමාණය (Qty)</th><th>මුළු ආදායම (Sales)</th><th>ශුද්ධ ලාභය (Profit)</th></tr>`;
+        currentReportCSVRows.push(["Code", "Item Name", "Sold Qty", "Total Sales", "Net Profit"]);
+
+        if (sortedItems.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted);">මෙම කාලය තුළ දත්ත නොමැත</td></tr>';
+          return;
+        }
+
+        let sumTotal = 0, sumProf = 0;
+        tbody.innerHTML = sortedItems.map(i => {
+          sumTotal += i.total; sumProf += i.profit;
+          currentReportCSVRows.push([i.barcode, i.name, i.qty.toFixed(2), i.total.toFixed(2), i.profit.toFixed(2)]);
+          return `<tr>
+            <td>${i.barcode}</td>
+            <td style="font-weight:bold;">${i.name}</td>
+            <td>${Number(i.qty.toFixed(3))}</td>
+            <td style="color:var(--accent); font-weight:bold;">Rs. ${i.total.toFixed(2)}</td>
+            <td style="color:#38bdf8; font-weight:bold;">Rs. ${i.profit.toFixed(2)}</td>
+          </tr>`;
+        }).join('') + `
+          <tr style="background:#0f172a; font-weight:bold; border-top:2px solid var(--accent);">
+            <td colspan="3">TOTAL (මුළු එකතුව)</td>
+            <td style="color:var(--accent);">Rs. ${sumTotal.toFixed(2)}</td>
+            <td style="color:#38bdf8;">Rs. ${sumProf.toFixed(2)}</td>
+          </tr>`;
+        currentReportCSVRows.push(["", "TOTAL", "", sumTotal.toFixed(2), sumProf.toFixed(2)]);
+      }
+
+      // 3. CUSTOMER DUES REPORT
+      else if (type === 'dues') {
+        titleEl.innerText = `⚠️ දැනට අයවිය යුතු ණයගැතියන්ගේ වාර්තාව (Customer Dues Report - ${todayStr})`;
+        currentReportFilename = `Customer_Dues_${todayStr}.csv`;
+
+        const { data, error } = await db
+          .from('sales')
+          .select('invoice_no, created_at, customer_note, net_total, paid_amount, due_amount, payment_method')
+          .gt('due_amount', 0)
+          .order('created_at', { ascending: false });
+
+        if (error) { alert("Error: " + error.message); return; }
+
+        const validDues = (data || []).filter(s => !(s.payment_method && s.payment_method.startsWith('VOIDED')));
+        thead.innerHTML = `<tr><th>දිනය (Date)</th><th>Invoice No</th><th>පාරිභෝගිකයා (Customer)</th><th>මුළු බිල (Total)</th><th>ගෙවූ මුදල (Paid)</th><th>ඉතිරි ණය (Due)</th></tr>`;
+        currentReportCSVRows.push(["Date", "Invoice No", "Customer", "Bill Total", "Paid", "Due Amount"]);
+
+        if (validDues.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--accent);">🎉 දැනට කිසිදු ණය මුදලක් අයවීමට නොමැත!</td></tr>';
+          return;
+        }
+
+        let totalDueSum = 0;
+        tbody.innerHTML = validDues.map(s => {
+          const dt = new Date(s.created_at).toLocaleDateString('en-CA');
+          const due = Number(s.due_amount) || 0;
+          const paid = Number(s.paid_amount) || 0;
+          totalDueSum += due;
+          currentReportCSVRows.push([dt, s.invoice_no, s.customer_note || "-", Number(s.net_total).toFixed(2), paid.toFixed(2), due.toFixed(2)]);
+          return `<tr>
+            <td>${dt}</td>
+            <td>${s.invoice_no}</td>
+            <td style="font-weight:bold;">${s.customer_note || '-'}</td>
+            <td>Rs. ${Number(s.net_total).toFixed(2)}</td>
+            <td>Rs. ${paid.toFixed(2)}</td>
+            <td style="color:var(--danger); font-weight:bold;">Rs. ${due.toFixed(2)}</td>
+          </tr>`;
+        }).join('') + `
+          <tr style="background:#0f172a; font-weight:bold; border-top:2px solid var(--danger);">
+            <td colspan="5">TOTAL OUTSTANDING DUES (මුළු අයවිය යුතු ණය)</td>
+            <td style="color:var(--danger); font-size:1.05rem;">Rs. ${totalDueSum.toFixed(2)}</td>
+          </tr>`;
+        currentReportCSVRows.push(["", "", "TOTAL DUES", "", "", totalDueSum.toFixed(2)]);
+      }
+
+      // 4. STOCK VALUATION & LOW STOCK REPORT (SMART BATCH FILTERING)
+      else if (type === 'stock') {
+        titleEl.innerText = `🏪 වත්මන් තොග වටිනාකම සහ Low Stock වාර්තාව (${todayStr})`;
+        currentReportFilename = `Stock_Valuation_${todayStr}.csv`;
+
+        thead.innerHTML = `<tr><th>Code</th><th>භාණ්ඩය (Item)</th><th>Stock</th><th>ගත් මිල (Cost)</th><th>තොග වටිනාකම (Cost Val)</th><th>විකුණුම් වටිනාකම (Sell Val)</th></tr>`;
+        currentReportCSVRows.push(["Code", "Item Name", "Stock Qty", "Unit Cost", "Total Cost Value", "Total Selling Value"]);
+
+        // එකම Barcode එකේ මුළු තොගය ගණනය කිරීම
+        const barcodeTotalStock = {};
+        allProducts.forEach(p => {
+          barcodeTotalStock[p.barcode] = (barcodeTotalStock[p.barcode] || 0) + p.stock;
+        });
+
+        // Stock 0 වූ පරණ මිල කාණ්ඩ (වෙනත් මිලකින් තොග ඇත්නම්) ඉවත් කිරීම
+        const visibleStockList = allProducts.filter(p => {
+          if (p.stock > 0) return true;
+          const hasActiveBatch = allProducts.some(other => other.barcode === p.barcode && other.stock > 0);
+          if (hasActiveBatch) return false;
+          const sameCodeItems = allProducts.filter(other => other.barcode === p.barcode);
+          return sameCodeItems[sameCodeItems.length - 1].id === p.id;
+        });
+
+        let totCostVal = 0, totSellVal = 0;
+        tbody.innerHTML = visibleStockList.map(p => {
+          const cVal = p.stock * p.cost;
+          const sVal = p.stock * p.price;
+          totCostVal += cVal;
+          totSellVal += sVal;
+          const isLow = (barcodeTotalStock[p.barcode] || 0) <= 5;
+          currentReportCSVRows.push([p.barcode, p.name, p.stock, p.cost.toFixed(2), cVal.toFixed(2), sVal.toFixed(2)]);
+          return `<tr style="${isLow ? 'background:rgba(239,68,68,0.1);' : ''}">
+            <td>${p.barcode}</td>
+            <td style="font-weight:bold;">${p.name} ${isLow ? '<span style="color:var(--danger);">⚠️ LOW</span>' : ''}</td>
+            <td style="color:${isLow ? 'var(--danger)' : 'var(--accent)'}; font-weight:bold;">${p.stock} ${p.unit}</td>
+            <td>Rs. ${p.cost.toFixed(2)}</td>
+            <td>Rs. ${cVal.toFixed(2)}</td>
+            <td style="color:var(--accent);">Rs. ${sVal.toFixed(2)}</td>
+          </tr>`;
+        }).join('') + `
+          <tr style="background:#0f172a; font-weight:bold; border-top:2px solid var(--accent);">
+            <td colspan="4">TOTAL INVENTORY VALUE (මුළු තොග වටිනාකම)</td>
+            <td style="color:#38bdf8;">Rs. ${totCostVal.toFixed(2)}</td>
+            <td style="color:var(--accent);">Rs. ${totSellVal.toFixed(2)}</td>
+          </tr>`;
+        currentReportCSVRows.push(["", "TOTAL INVENTORY VALUE", "", "", totCostVal.toFixed(2), totSellVal.toFixed(2)]);
+      }
+    }
+
+    function exportReportToCSV() {
+      if (currentReportCSVRows.length === 0) {
+        alert("⚠️ කරුණාකර පළමුව 'Generate Report' ඔබා වාර්තාව සකස් කරගන්න!");
+        return;
+      }
+      // සිංහල අකුරු Excel වල නිවැරදිව පෙනීමට UTF-8 BOM (\uFEFF) එකතු කිරීම
+      const csvContent = "\uFEFF" + currentReportCSVRows.map(row =>
+        row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+      ).join("\n");
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = currentReportFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function printBusinessReport() {
+      if (currentReportCSVRows.length === 0) {
+        alert("⚠️ කරුණාකර පළමුව 'Generate Report' ඔබා වාර්තාව සකස් කරගන්න!");
+        return;
+      }
+      document.body.classList.add('print-report-mode');
+      window.print();
+      setTimeout(() => document.body.classList.remove('print-report-mode'), 500);
     }
 
     function switchTab(tabId, btn) {
