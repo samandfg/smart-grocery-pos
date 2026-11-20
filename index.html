@@ -572,7 +572,20 @@
 	  
     
   </div>
-
+<!-- ADMIN PIN PASSWORD MODAL -->
+  <div id="adminPinModal" class="modal-overlay" style="z-index: 9999;">
+    <div class="modal-box" style="max-width: 360px; text-align: center;">
+      <h3 style="margin-top:0; color:#fbbf24;">🔐 Admin PIN අවශ්‍යයි</h3>
+      <p id="adminPinMsg" style="color:var(--muted); font-size:0.92rem; margin-bottom:14px;">Admin PIN අංකය ඇතුළත් කරන්න:</p>
+      <input type="password" id="adminPinInput" maxlength="10" placeholder="••••"
+        style="width:100%; box-sizing:border-box; padding:12px; font-size:1.4rem; text-align:center; letter-spacing:8px; border-radius:8px; border:1px solid var(--accent); background:#0f172a; color:#fff; margin-bottom:16px;"
+        onkeydown="if(event.key==='Enter') submitAdminPinModal(); if(event.key==='Escape') closeAdminPinModal();">
+      <div style="display:flex; gap:10px; justify-content:center;">
+        <button class="btn-primary" style="flex:1; padding:10px;" onclick="submitAdminPinModal()">OK (තහවුරු කරන්න)</button>
+        <button onclick="closeAdminPinModal()" style="flex:1; background:#334155; color:#fff; border:none; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold;">Cancel</button>
+      </div>
+    </div>
+  </div>
   <!-- BILL DETAILS, RE-PRINT, SETTLE DUE & ADMIN EDIT/VOID MODAL -->
   <div id="billDetailModal" class="modal-overlay">
     <div class="modal-box">
@@ -1438,8 +1451,8 @@
     const OVERRIDE_PIN = "1234"; // ඔබට අවශ්‍ය Admin PIN එක මෙතැනින් වෙනස් කළ හැක
     let isBillOverrideUnlocked = false;
 
-    function requestAdminOverride() {
-      const pin = prompt("🔐 බිල නිවැරදි කිරීමට හෝ අවලංගු කිරීමට Admin PIN අංකය ඇතුළත් කරන්න:");
+    async function requestAdminOverride() {
+      const pin = await askAdminPin("🔐 බිල නිවැරදි කිරීමට හෝ අවලංගු කිරීමට Admin PIN අංකය ඇතුළත් කරන්න:");
       if (pin === OVERRIDE_PIN) {
         isBillOverrideUnlocked = true;
         document.getElementById('btnAdminOverride').style.display = 'none';
@@ -2003,11 +2016,31 @@
     // ADMIN STOCK EDIT & DELETE (WITH OVERRIDE)
     // ==========================================
     let isStockOverrideUnlocked = false;
+	let adminPinResolver = null;
+    function askAdminPin(message) {
+      return new Promise(resolve => {
+        adminPinResolver = resolve;
+        document.getElementById('adminPinMsg').innerText = message;
+        const inp = document.getElementById('adminPinInput');
+        inp.value = '';
+        document.getElementById('adminPinModal').style.display = 'flex';
+        setTimeout(() => inp.focus(), 50);
+      });
+    }
+    function submitAdminPinModal() {
+      const val = document.getElementById('adminPinInput').value;
+      document.getElementById('adminPinModal').style.display = 'none';
+      if (adminPinResolver) { adminPinResolver(val); adminPinResolver = null; }
+    }
+    function closeAdminPinModal() {
+      document.getElementById('adminPinModal').style.display = 'none';
+      if (adminPinResolver) { adminPinResolver(null); adminPinResolver = null; }
+    }
 
-    function toggleStockOverride() {
+    async function toggleStockOverride() {
       if (isCurrentUserAdmin) return;
       if (!isStockOverrideUnlocked) {
-        const pin = prompt("🔐 තොග වෙනස් කිරීමට හෝ මැකීමට Admin PIN අංකය ඇතුළත් කරන්න:");
+        const pin = await askAdminPin("🔐 තොග වෙනස් කිරීමට හෝ මැකීමට Admin PIN අංකය ඇතුළත් කරන්න:");
         if (pin === OVERRIDE_PIN) {
           isStockOverrideUnlocked = true;
           const btn = document.getElementById('btnStockOverride');
