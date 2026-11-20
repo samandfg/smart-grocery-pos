@@ -540,8 +540,10 @@
             <select id="repType" onchange="onReportTypeChange()" style="padding:9px 12px; border-radius:6px; border:1px solid var(--border); background:var(--card); color:#fff; font-weight:bold;">
               <option value="daily">📅 1. දිනෙන් දින විකුණුම් වාර්තාව (Daily Sales Breakdown)</option>
               <option value="items">📦 2. භාණ්ඩ අනුව විකුණුම් සහ ලාභය (Item-wise Sales & Profit)</option>
-              <option value="dues">⚠️ 3. ණයගැතියන්ගේ වාර්තාව (Customer Dues Report)</option>
-              <option value="stock">🏪 4. වත්මන් තොග වටිනාකම සහ Low Stock (Stock Valuation)</option>
+              <option value="fast">🔥 3. වේගයෙන් විකිණෙන භාණ්ඩ (Fast-Moving Items)</option>
+              <option value="slow">🐢 4. හෙමින් විකිණෙන / නොවිකිණෙන භාණ්ඩ (Slow-Moving Items)</option>
+              <option value="dues">⚠️ 5. ණයගැතියන්ගේ වාර්තාව (Customer Dues Report)</option>
+              <option value="stock">🏪 6. වත්මන් තොග වටිනාකම සහ Low Stock (Stock Valuation)</option>
             </select>
             <div id="repDateInputs" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
               <input type="date" id="repFromDate" style="padding:8px; border-radius:6px; border:1px solid var(--border); background:var(--card); color:#fff;">
@@ -1072,6 +1074,122 @@
             <td style="color:#38bdf8;">Rs. ${sumProf.toFixed(2)}</td>
           </tr>`;
         currentReportCSVRows.push(["", "TOTAL", "", sumTotal.toFixed(2), sumProf.toFixed(2)]);
+      }
+	  // FAST-MOVING & SLOW-MOVING ITEMS REPORT
+      else if (type === 'fast' || type === 'slow') {
+        const isFast = type === 'fast';
+        titleEl.innerText = isFast
+          ? `🔥 වේගයෙන් විකිණෙන භාණ්ඩ වාර්තාව - Fast-Moving Items (${fromVal} සිට ${toVal} දක්වා)`
+          : `🐢 හෙමින් විකිණෙන සහ නොවිකිණෙන භාණ්ඩ - Slow-Moving Items (${fromVal} සිට ${toVal} දක්වා)`;
+        currentReportFilename = `${isFast ? 'Fast_Moving' : 'Slow_Moving'}_Items_${fromVal}_to_${toVal}.csv`;
+
+        // Void නොවූ valid invoices ලබාගැනීම
+        const { data: validSales } = await db
+          .from('sales')
+          .select('invoice_no, payment_method')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString());
+
+        const validInvSet = new Set(
+          (validSales || [])
+            .filter(s => !(s.payment_method && s.payment_method.startsWith('VOIDED')))
+            .map(s => s.invoice_no)
+        );
+
+        const { data: itemsData, error } = await db
+          .from('sale_items')
+          .select('invoice_no, barcode, name, qty, line_total')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString());
+
+        if (error) { alert("Error: " + error.message); return; }
+
+        // Barcode අනුව විකිණුණු මුළු ප්‍රමාණය ගණනය කිරීම
+        const soldMap = {};
+        (itemsData || []).forEach(it => {
+          if (!validInvSet.has(it.invoice_no)) return;
+          if (!soldMap[it.barcode]) soldMap[it.barcode] = { qty: 0, total: 0 };
+          soldMap[it.barcode].qty += Number(it.qty) || 0;
+          soldMap[it.barcode].total += Number(it.line_total) || 0;
+        });
+
+        // දැනට පද්ධතියේ ඇති සියලුම භාණ්ඩ (Unique Barcode) ලැයිස්තුව සැකසීම
+        const uniqueProductsMap = {};
+        allProducts.forEach(p => {
+          if (!uniqueProductsMap[p.barcode]) {
+            uniqueProductsMap[p.barcode] = { barcode: p.barcode, name: p.name, unit: p.unit, currentStock: 0 };
+          }
+          uniqueProductsMap[p.barcode].currentStock += p.stock;
+        });
+
+        let reportList = Object.values(uniqueProductsMap).map(prod => {
+          const sold = soldMap[prod.barcode] || { qty: 0, total: 0 };
+          return {
+            barcode: prod.barcode,
+            name: prod.name,
+            unit: prod.unit,
+            soldQty: sold.qty,
+            soldTotal: sold.total,
+            currentStock: prod.currentStock
+          };
+        });
+
+        // සියලුම භාණ්ඩවල සාමාන්‍ය විකුණුම් ප්‍රමාණය (Average Sold Qty) ගණනය කිරීම
+        const totalSoldAll = reportList.reduce((sum, item) => sum + item.soldQty, 0);
+        const avgSoldQty = reportList.length > 0 ? (totalSoldAll / reportList.length) : 0;
+
+        if (isFast) {
+          // Fast-Moving: සාමාන්‍යයට වඩා වැඩියෙන් විකිණුණු භාණ්ඩ පමණක් (වැඩිම සිට අඩුම දක්වා)
+          reportList = reportList
+            .filter(i => i.soldQty > 0 && i.soldQty >= avgSoldQty)
+            .sort((a, b) => b.soldQty - a.soldQty);
+        } else {
+          // Slow-Moving: සාමාන්‍යයට වඩා අඩුවෙන් විකිණුණු හෝ 0ක් විකිණුණු භාණ්ඩ පමණක්
+          reportList = reportList
+            .filter(i => i.soldQty < avgSoldQty || i.soldQty === 0)
+            .sort((a, b) => a.soldQty - b.soldQty);
+        }
+
+        thead.innerHTML = `<tr><th>#</th><th>Code</th><th>භාණ්ඩය (Item Name)</th><th>විකිණුණු ප්‍රමාණය (Sold Qty)</th><th>විකුණුම් ආදායම (Sales)</th><th>දැනට ඇති තොගය (Stock)</th><th>තත්ත්වය (Status)</th></tr>`;
+        currentReportCSVRows.push(["Rank", "Code", "Item Name", "Sold Qty", "Sales Amount", "Current Stock", "Status"]);
+
+        if (reportList.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--muted);">මෙම කාලය තුළ දත්ත නොමැත</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = reportList.map((item, idx) => {
+          let statusBadge = "";
+          if (isFast) {
+            statusBadge = idx < 5
+              ? '<span style="color:#fbbf24; font-weight:bold;">🔥 Top Moving</span>'
+              : '<span style="color:var(--accent);">⚡ Fast</span>';
+          } else {
+            statusBadge = item.soldQty === 0
+              ? '<span style="color:var(--danger); font-weight:bold;">🛑 Dead Stock (0 Sold)</span>'
+              : '<span style="color:#f59e0b;">🐢 Slow Moving</span>';
+          }
+
+          currentReportCSVRows.push([
+            idx + 1,
+            item.barcode,
+            item.name,
+            Number(item.soldQty.toFixed(3)),
+            item.soldTotal.toFixed(2),
+            Number(item.currentStock.toFixed(3)),
+            item.soldQty === 0 ? "Dead Stock (0 Sold)" : (isFast ? "Fast Moving" : "Slow Moving")
+          ]);
+
+          return `<tr>
+            <td>${idx + 1}</td>
+            <td>${item.barcode}</td>
+            <td style="font-weight:bold;">${item.name}</td>
+            <td style="color:${item.soldQty === 0 ? 'var(--danger)' : 'var(--accent)'}; font-weight:bold;">${Number(item.soldQty.toFixed(3))} ${item.unit}</td>
+            <td>Rs. ${item.soldTotal.toFixed(2)}</td>
+            <td>${Number(item.currentStock.toFixed(3))} ${item.unit}</td>
+            <td>${statusBadge}</td>
+          </tr>`;
+        }).join('');
       }
 
       // 3. CUSTOMER DUES REPORT
