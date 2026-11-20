@@ -30,18 +30,47 @@
       -moz-appearance: textfield;
     }
 
+    /* LOGIN SCREEN STYLES */
+    #loginScreen {
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; padding: 20px; background: radial-gradient(circle at top, #1e293b, #020617);
+    }
+    .login-card {
+      background: var(--card); border: 2px solid var(--accent); border-radius: 14px;
+      padding: 28px 24px; width: 100%; max-width: 390px; box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+    }
+    .login-card h2 { margin: 0 0 6px 0; color: var(--accent); text-align: center; }
+    .login-card p { margin: 0 0 20px 0; color: var(--muted); text-align: center; font-size: 0.9rem; }
+    .login-input {
+      width: 100%; padding: 11px 12px; border-radius: 8px; border: 1px solid var(--border);
+      background: #0f172a; color: #fff; font-size: 1rem; margin-top: 5px; margin-bottom: 14px;
+    }
+    .login-input:focus { border-color: var(--accent); outline: none; }
+
     /* Navigation Tabs */
     .navbar {
       display: flex; justify-content: space-between; align-items: center;
       background: #020617; padding: 10px 20px; border-bottom: 1px solid var(--border);
       flex-wrap: wrap; gap: 8px;
     }
-    .brand { font-size: 1.2rem; font-weight: bold; color: var(--accent); }
+    .brand { font-size: 1.2rem; font-weight: bold; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+    .role-badge {
+      font-size: 0.75rem; padding: 3px 8px; border-radius: 20px; font-weight: bold;
+      background: rgba(16, 185, 129, 0.2); color: var(--accent); border: 1px solid var(--accent);
+    }
+    .role-badge.cashier {
+      background: rgba(56, 189, 248, 0.2); color: #38bdf8; border-color: #38bdf8;
+    }
+    .nav-btns { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
     .nav-btns button {
       background: transparent; border: 1px solid var(--border); color: var(--text);
-      padding: 8px 14px; border-radius: 6px; cursor: pointer; margin-left: 6px; font-weight: 600;
+      padding: 8px 13px; border-radius: 6px; cursor: pointer; font-weight: 600;
     }
     .nav-btns button.active { background: var(--accent); color: #000; border-color: var(--accent); }
+    .btn-logout {
+      background: rgba(239, 68, 68, 0.15) !important; border-color: var(--danger) !important;
+      color: #fca5a5 !important; margin-left: 6px;
+    }
 
     .container { max-width: 1380px; margin: 12px auto; padding: 0 15px; }
     .tab-content { display: none; }
@@ -183,263 +212,294 @@
 </head>
 <body class="notranslate">
 
-  <div class="navbar">
-    <div class="brand">⚡ Smart Grocery POS (Cloud)</div>
-    <div class="nav-btns">
-      <button id="navBtn-pos" class="active" onclick="switchTab('pos', this)">🧾 Billing</button>
-      <button id="navBtn-history" onclick="switchTab('history', this)">📜 Bill History</button>
-      <button id="navBtn-stock" onclick="switchTab('stock', this)">📦 Stock / Items</button>
-      <button id="navBtn-dash" onclick="switchTab('dash', this)">📊 Dashboard</button>
+  <!-- ========================================== -->
+  <!-- 1. SECURE LOGIN SCREEN                     -->
+  <!-- ========================================== -->
+  <div id="loginScreen">
+    <div class="login-card">
+      <h2>⚡ Smart Grocery POS</h2>
+      <p>පද්ධතියට ඇතුළු වීමට ඔබේ Email සහ Password ඇතුළත් කරන්න</p>
+      
+      <label style="font-size:0.85rem; color:var(--muted);">Email Address</label>
+      <input type="email" id="loginEmail" class="login-input" placeholder="උදා: samandfg@gmail.com" onkeydown="if(event.key==='Enter') document.getElementById('loginPassword').focus()">
+      
+      <label style="font-size:0.85rem; color:var(--muted);">Password</label>
+      <input type="password" id="loginPassword" class="login-input" placeholder="••••••••" onkeydown="if(event.key==='Enter') handleLogin()">
+      
+      <button id="btnLoginSubmit" class="btn-primary" style="width:100%; margin-top:4px;" onclick="handleLogin()">
+        🔐 Login (ඇතුළු වන්න)
+      </button>
+      <div id="loginErrorMsg" style="color:var(--danger); font-size:0.85rem; text-align:center; margin-top:10px; display:none;"></div>
     </div>
   </div>
 
-  <div class="container">
-    <!-- TAB 1: 3-COLUMN POS BILLING -->
-    <div id="tab-pos" class="tab-content active">
-      <div class="pos-grid">
-        <div class="panel">
-          <input type="text" id="searchInput" class="search-box" placeholder="🔍 Barcode Scan / නම ටයිප් කරන්න..." autofocus>
-          <div style="font-size: 0.78rem; color: var(--muted); margin-top: 5px;">
-            * භාණ්ඩය මත Click කර බිල් එකට එකතු කරන්න (Stock 5ට අඩු නම් රතු පාටින් පෙන්වයි).
-          </div>
-          <div id="quickProducts" class="quick-grid">Loading products...</div>
-        </div>
+  <!-- ========================================== -->
+  <!-- 2. MAIN POS APPLICATION (HIDDEN UNTIL LOGIN) -->
+  <!-- ========================================== -->
+  <div id="appWrapper" style="display:none;">
+    <div class="navbar">
+      <div class="brand">
+        ⚡ Smart Grocery POS
+        <span id="userRoleBadge" class="role-badge">ADMIN</span>
+      </div>
+      <div class="nav-btns">
+        <button id="navBtn-pos" class="active" onclick="switchTab('pos', this)">🧾 Billing</button>
+        <button id="navBtn-history" onclick="switchTab('history', this)">📜 Bill History</button>
+        <button id="navBtn-stock" onclick="switchTab('stock', this)">📦 Stock / Items</button>
+        <button id="navBtn-dash" onclick="switchTab('dash', this)">📊 Dashboard</button>
+        <button class="btn-logout" onclick="handleLogout()" title="Logout">🚪 Logout</button>
+      </div>
+    </div>
 
+    <div class="container">
+      <!-- TAB 1: 3-COLUMN POS BILLING -->
+      <div id="tab-pos" class="tab-content active">
+        <div class="pos-grid">
+          <div class="panel">
+            <input type="text" id="searchInput" class="search-box" placeholder="🔍 Barcode Scan / නම ටයිප් කරන්න..." autofocus>
+            <div style="font-size: 0.78rem; color: var(--muted); margin-top: 5px;">
+              * භාණ්ඩය මත Click කර බිල් එකට එකතු කරන්න (Stock 5ට අඩු නම් රතු පාටින් පෙන්වයි).
+            </div>
+            <div id="quickProducts" class="quick-grid">Loading products...</div>
+          </div>
+
+          <div class="panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:8px;">
+              <h3 style="margin:0;">🧾 Current Bill (<span id="lblItemCount">0</span>)</h3>
+              <button onclick="clearCart()" style="background:transparent; border:1px solid var(--danger); color:var(--danger); border-radius:5px; padding:4px 10px; cursor:pointer; font-weight:bold;">Clear All</button>
+            </div>
+            <div id="editBanner" style="display:none; background:rgba(245,158,11,0.2); border:1px solid #f59e0b; color:#fcd34d; padding:6px 10px; border-radius:6px; margin-top:8px; font-size:0.85rem;">
+              ✏️ පැරණි බිලක් සංස්කරණය කරමින් පවතී — අවශ්‍ය වෙනස්කම් කර Save කරන්න.
+            </div>
+            <div class="bill-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="cartBody">
+                  <tr><td colspan="5" style="text-align:center; color:var(--muted); padding:30px 0;">බිල් එක හිස්ය</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel checkout-panel">
+            <h3 style="margin-top:0; margin-bottom:10px;">💳 Bill Summary</h3>
+            <div class="totals-box">
+              <div class="tot-row">
+                <span>Subtotal (මුළු එකතුව):</span>
+                <span id="lblSubtotal" style="font-weight:bold;">Rs. 0.00</span>
+              </div>
+              <div class="tot-row">
+                <span>Discount (වට්ටම් Rs.):</span>
+                <input type="number" id="inpDiscount" class="num-input" placeholder="0" min="0" oninput="recalcTotals()" onwheel="this.blur()">
+              </div>
+              <div class="tot-row grand">
+                <span>TOTAL:</span>
+                <span id="lblNetTotal">Rs. 0.00</span>
+              </div>
+              <div class="tot-row">
+                <span>Cash Given (දුන් මුදල):</span>
+                <input type="number" id="inpCash" class="num-input" placeholder="0" oninput="recalcTotals()" onwheel="this.blur()" onkeydown="if(event.key==='Enter'){ event.preventDefault(); checkout(true); }">
+              </div>
+              <div class="tot-row" style="color: #fbbf24; font-weight: bold; font-size: 1.1rem; margin-top:10px;">
+                <span id="lblBalanceTitle">Balance (ඉතිරි මුදල):</span>
+                <span id="lblBalance">Rs. 0.00</span>
+              </div>
+              <div class="tot-row" style="margin-top:12px; border-top:1px solid var(--border); padding-top:10px;">
+                <span>Payment:</span>
+                <select id="selPayment" style="background:var(--card); color:#fff; border:1px solid var(--border); padding:6px 10px; border-radius:4px;">
+                  <option value="Cash">Cash (මුදල්)</option>
+                  <option value="Credit">Credit (සම්පූර්ණ ණයට)</option>
+                </select>
+              </div>
+              <input type="text" id="inpCustNote" placeholder="ණය මුදලක් ඇත්නම් පාරිභෝගිකයාගේ නම..." style="width:100%; margin-top:8px; padding:8px; background:var(--card); border:1px solid var(--border); color:#fff; border-radius:4px;">
+            </div>
+
+            <div class="action-btns">
+              <button id="btnSavePrint" class="btn-primary" onclick="checkout(true)">🖨️ Save & Print (58mm)</button>
+              <button id="btnSaveOnly" class="btn-secondary" onclick="checkout(false)">💾 Save Only (No Print)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: BILL HISTORY (පැරණි බිල්පත්) -->
+      <div id="tab-history" class="tab-content">
         <div class="panel">
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:8px;">
-            <h3 style="margin:0;">🧾 Current Bill (<span id="lblItemCount">0</span>)</h3>
-            <button onclick="clearCart()" style="background:transparent; border:1px solid var(--danger); color:var(--danger); border-radius:5px; padding:4px 10px; cursor:pointer; font-weight:bold;">Clear All</button>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+            <h3 style="margin:0;">📜 පැරණි බිල්පත් (Bill History)</h3>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <input type="date" id="histDateFilter" onchange="filterBillHistory()" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff;">
+              <input type="text" id="histSearchInput" oninput="filterBillHistory()" placeholder="🔍 Bill No / නම සොයන්න..." style="padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff; min-width:210px;">
+              <button onclick="filterOnlyDues()" style="background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid var(--danger); padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">⚠️ ණය බිල් (Dues)</button>
+              <button onclick="resetHistoryFilters()" style="background:#334155; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">All Bills</button>
+              <button class="btn-secondary" style="padding:8px 12px;" onclick="loadBillHistory()">🔄 Refresh</button>
+            </div>
           </div>
-          <div id="editBanner" style="display:none; background:rgba(245,158,11,0.2); border:1px solid #f59e0b; color:#fcd34d; padding:6px 10px; border-radius:6px; margin-top:8px; font-size:0.85rem;">
-            ✏️ පැරණි බිලක් සංස්කරණය කරමින් පවතී — අවශ්‍ය වෙනස්කම් කර Save කරන්න.
-          </div>
-          <div class="bill-scroll">
+
+          <div style="overflow-x:auto;">
             <table>
               <thead>
                 <tr>
-                  <th>Item</th>
-                  <th>Qty</th>
-                  <th>Price</th>
+                  <th>Invoice No</th>
+                  <th>දිනය සහ වේලාව</th>
+                  <th>Status</th>
+                  <th>Customer / Note</th>
                   <th>Total</th>
-                  <th></th>
+                  <th>Paid</th>
+                  <th>Due (ණය)</th>
+                  <th>Action</th>
                 </tr>
               </thead>
-              <tbody id="cartBody">
-                <tr><td colspan="5" style="text-align:center; color:var(--muted); padding:30px 0;">බිල් එක හිස්ය</td></tr>
+              <tbody id="historyTableBody">
+                <tr><td colspan="8" style="text-align:center; color:var(--muted); padding:20px;">Loading bills...</td></tr>
               </tbody>
             </table>
           </div>
         </div>
+      </div>
 
-        <div class="panel checkout-panel">
-          <h3 style="margin-top:0; margin-bottom:10px;">💳 Bill Summary</h3>
-          <div class="totals-box">
-            <div class="tot-row">
-              <span>Subtotal (මුළු එකතුව):</span>
-              <span id="lblSubtotal" style="font-weight:bold;">Rs. 0.00</span>
+      <!-- TAB 3: STOCK & ADD ITEM -->
+      <div id="tab-stock" class="tab-content">
+        <div class="panel" style="margin-bottom: 15px;">
+          <h3 style="margin-top:0;">➕ නව භාණ්ඩයක් ඇතුළත් කිරීම / Stock එකතු කිරීම</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Barcode / Short Code *</label>
+              <input type="text" id="pCode" placeholder="උදා: 103 හෝ Barcode">
             </div>
-            <div class="tot-row">
-              <span>Discount (වට්ටම් Rs.):</span>
-              <input type="number" id="inpDiscount" class="num-input" placeholder="0" min="0" oninput="recalcTotals()" onwheel="this.blur()">
+            <div class="form-group">
+              <label>භාණ්ඩයේ නම (Item Name) *</label>
+              <input type="text" id="pName" placeholder="උදා: Red Dhal (1kg)">
             </div>
-            <div class="tot-row grand">
-              <span>TOTAL:</span>
-              <span id="lblNetTotal">Rs. 0.00</span>
-            </div>
-            <div class="tot-row">
-              <span>Cash Given (දුන් මුදල):</span>
-              <input type="number" id="inpCash" class="num-input" placeholder="0" oninput="recalcTotals()" onwheel="this.blur()" onkeydown="if(event.key==='Enter'){ event.preventDefault(); checkout(true); }">
-            </div>
-            <div class="tot-row" style="color: #fbbf24; font-weight: bold; font-size: 1.1rem; margin-top:10px;">
-              <span id="lblBalanceTitle">Balance (ඉතිරි මුදල):</span>
-              <span id="lblBalance">Rs. 0.00</span>
-            </div>
-            <div class="tot-row" style="margin-top:12px; border-top:1px solid var(--border); padding-top:10px;">
-              <span>Payment:</span>
-              <select id="selPayment" style="background:var(--card); color:#fff; border:1px solid var(--border); padding:6px 10px; border-radius:4px;">
-                <option value="Cash">Cash (මුදල්)</option>
-                <option value="Credit">Credit (සම්පූර්ණ ණයට)</option>
+            <div class="form-group">
+              <label>ඒකකය (Unit)</label>
+              <select id="pUnit">
+                <option value="Pcs">Pcs (කැබලි/පැකට්)</option>
+                <option value="Kg">Kg (කිරන බඩු)</option>
               </select>
             </div>
-            <input type="text" id="inpCustNote" placeholder="ණය මුදලක් ඇත්නම් පාරිභෝගිකයාගේ නම..." style="width:100%; margin-top:8px; padding:8px; background:var(--card); border:1px solid var(--border); color:#fff; border-radius:4px;">
+            <div class="form-group">
+              <label>ගත් මිල (Cost Price) *</label>
+              <input type="number" id="pCost" placeholder="0.00" onwheel="this.blur()">
+            </div>
+            <div class="form-group">
+              <label>විකුණුම් මිල (Selling Price) *</label>
+              <input type="number" id="pPrice" placeholder="0.00" onwheel="this.blur()">
+            </div>
+            <div class="form-group">
+              <label>එකතු කරන තොගය (Stock Qty) *</label>
+              <input type="number" id="pStock" step="0.01" placeholder="0" onwheel="this.blur()">
+            </div>
           </div>
-
-          <div class="action-btns">
-            <button id="btnSavePrint" class="btn-primary" onclick="checkout(true)">🖨️ Save & Print (58mm)</button>
-            <button id="btnSaveOnly" class="btn-secondary" onclick="checkout(false)">💾 Save Only (No Print)</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB 2: BILL HISTORY (පැරණි බිල්පත්) -->
-    <div id="tab-history" class="tab-content">
-      <div class="panel">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
-          <h3 style="margin:0;">📜 පැරණි බිල්පත් (Bill History)</h3>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <input type="date" id="histDateFilter" onchange="filterBillHistory()" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff;">
-            <input type="text" id="histSearchInput" oninput="filterBillHistory()" placeholder="🔍 Bill No / නම සොයන්න..." style="padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff; min-width:210px;">
-            <button onclick="filterOnlyDues()" style="background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid var(--danger); padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">⚠️ ණය බිල් (Dues)</button>
-            <button onclick="resetHistoryFilters()" style="background:#334155; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">All Bills</button>
-            <button class="btn-secondary" style="padding:8px 12px;" onclick="loadBillHistory()">🔄 Refresh</button>
-          </div>
+          <button class="btn-primary" style="margin-top:12px;" onclick="saveNewProduct()">Save Product / Add Stock</button>
         </div>
 
-        <div style="overflow-x:auto;">
+        <div class="panel">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0;">📋 දැනට පවතින තොග (Current Inventory)</h3>
+            <span id="adminStockBadge" style="display:none; font-size:0.85rem; color:var(--accent); font-weight:bold;">
+              👑 Admin Edit / Delete Active
+            </span>
+          </div>
           <table>
             <thead>
               <tr>
-                <th>Invoice No</th>
-                <th>දිනය සහ වේලාව</th>
-                <th>Status</th>
-                <th>Customer / Note</th>
-                <th>Total</th>
-                <th>Paid</th>
-                <th>Due (ණය)</th>
-                <th>Action</th>
+                <th>Code</th>
+                <th>Item Name</th>
+                <th>Unit</th>
+                <th>Cost</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th></th>
               </tr>
             </thead>
-            <tbody id="historyTableBody">
-              <tr><td colspan="8" style="text-align:center; color:var(--muted); padding:20px;">Loading bills...</td></tr>
-            </tbody>
+            <tbody id="stockTableBody"></tbody>
           </table>
         </div>
       </div>
-    </div>
 
-    <!-- TAB 3: STOCK & ADD ITEM -->
-    <div id="tab-stock" class="tab-content">
-      <div class="panel" style="margin-bottom: 15px;">
-        <h3 style="margin-top:0;">➕ නව භාණ්ඩයක් ඇතුළත් කිරීම / Stock එකතු කිරීම</h3>
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Barcode / Short Code *</label>
-            <input type="text" id="pCode" placeholder="උදා: 103 හෝ Barcode">
+      <!-- TAB 4: DASHBOARD (ADMIN ONLY) -->
+      <div id="tab-dash" class="tab-content">
+        <!-- ROW 1: TODAY -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <h3 style="margin:0; color:var(--accent);">📅 අද දවසේ විකුණුම් (Today's Summary)</h3>
+          <button class="btn-secondary" style="padding:6px 12px;" onclick="loadData()">🔄 Refresh</button>
+        </div>
+        <div class="dash-grid">
+          <div class="stat-card">
+            <div style="color:var(--muted);">අද මුළු විකුණුම් (Today Sales)</div>
+            <div id="dSales" class="stat-val">Rs. 0.00</div>
           </div>
-          <div class="form-group">
-            <label>භාණ්ඩයේ නම (Item Name) *</label>
-            <input type="text" id="pName" placeholder="උදා: Red Dhal (1kg)">
+          <div class="stat-card">
+            <div style="color:var(--muted);">අද ශුද්ධ ලාභය (Today Profit)</div>
+            <div id="dProfit" class="stat-val" style="color:#38bdf8;">Rs. 0.00</div>
           </div>
-          <div class="form-group">
-            <label>ඒකකය (Unit)</label>
-            <select id="pUnit">
-              <option value="Pcs">Pcs (කැබලි/පැකට්)</option>
-              <option value="Kg">Kg (කිරන බඩු)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>ගත් මිල (Cost Price) *</label>
-            <input type="number" id="pCost" placeholder="0.00" onwheel="this.blur()">
-          </div>
-          <div class="form-group">
-            <label>විකුණුම් මිල (Selling Price) *</label>
-            <input type="number" id="pPrice" placeholder="0.00" onwheel="this.blur()">
-          </div>
-          <div class="form-group">
-            <label>එකතු කරන තොගය (Stock Qty) *</label>
-            <input type="number" id="pStock" step="0.01" placeholder="0" onwheel="this.blur()">
-          </div>
-        </div>
-        <button class="btn-primary" style="margin-top:12px;" onclick="saveNewProduct()">Save Product / Add Stock</button>
-      </div>
-
-      <div class="panel">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <h3 style="margin:0;">📋 දැනට පවතින තොග (Current Inventory)</h3>
-          <button id="btnAdminToggle" onclick="toggleAdminMode()" style="background:#334155; color:#fff; border:1px solid #475569; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">
-            🔒 Admin Edit / Delete
-          </button>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Code</th>
-              <th>Item Name</th>
-              <th>Unit</th>
-              <th>Cost</th>
-              <th>Price</th>
-              <th>Stock</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="stockTableBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- TAB 4: DASHBOARD -->
-    <div id="tab-dash" class="tab-content">
-      <!-- ROW 1: TODAY -->
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <h3 style="margin:0; color:var(--accent);">📅 අද දවසේ විකුණුම් (Today's Summary)</h3>
-        <button class="btn-secondary" style="padding:6px 12px;" onclick="loadData()">🔄 Refresh</button>
-      </div>
-      <div class="dash-grid">
-        <div class="stat-card">
-          <div style="color:var(--muted);">අද මුළු විකුණුම් (Today Sales)</div>
-          <div id="dSales" class="stat-val">Rs. 0.00</div>
-        </div>
-        <div class="stat-card">
-          <div style="color:var(--muted);">අද ශුද්ධ ලාභය (Today Profit)</div>
-          <div id="dProfit" class="stat-val" style="color:#38bdf8;">Rs. 0.00</div>
-        </div>
-        <div class="stat-card">
-          <div style="color:var(--muted);">අද දැමූ බිල් ගණන (Today Bills)</div>
-          <div id="dBills" class="stat-val" style="color:#fbbf24;">0</div>
-        </div>
-      </div>
-
-      <!-- ROW 2: THIS MONTH -->
-      <h3 style="margin:18px 0 8px 0; color:#38bdf8;">🗓️ මෙම මාසයේ විකුණුම් (This Month's Summary)</h3>
-      <div class="dash-grid">
-        <div class="stat-card">
-          <div style="color:var(--muted);">මාසයේ මුළු විකුණුම් (Month Sales)</div>
-          <div id="mSales" class="stat-val">Rs. 0.00</div>
-        </div>
-        <div class="stat-card">
-          <div style="color:var(--muted);">මාසයේ ශුද්ධ ලාභය (Month Profit)</div>
-          <div id="mProfit" class="stat-val" style="color:#38bdf8;">Rs. 0.00</div>
-        </div>
-        <div class="stat-card">
-          <div style="color:var(--muted);">මාසයේ මුළු බිල් ගණන (Month Bills)</div>
-          <div id="mBills" class="stat-val" style="color:#fbbf24;">0</div>
-        </div>
-      </div>
-
-      <!-- ROW 3: CUSTOM DATE RANGE -->
-      <div class="panel" style="margin-top:18px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
-          <h3 style="margin:0; color:#fbbf24;">🔎 දින පරාසය අනුව විකුණුම් (Date Range Report)</h3>
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <label style="font-size:0.85rem; color:var(--muted);">සිට (From):</label>
-            <input type="date" id="dashFromDate" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff;">
-            <label style="font-size:0.85rem; color:var(--muted);">දක්වා (To):</label>
-            <input type="date" id="dashToDate" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff;">
-            <button class="btn-primary" style="padding:8px 16px; font-size:0.95rem;" onclick="loadCustomRangeReport()">🔍 සොයන්න (Search)</button>
+          <div class="stat-card">
+            <div style="color:var(--muted);">අද දැමූ බිල් ගණන (Today Bills)</div>
+            <div id="dBills" class="stat-val" style="color:#fbbf24;">0</div>
           </div>
         </div>
 
-        <div class="dash-grid" style="margin-bottom:0;">
-          <div class="stat-card" style="background:#0f172a;">
-            <div style="color:var(--muted);">තෝරාගත් කාලයේ විකුණුම් (Range Sales)</div>
-            <div id="rSales" class="stat-val">Rs. 0.00</div>
+        <!-- ROW 2: THIS MONTH -->
+        <h3 style="margin:18px 0 8px 0; color:#38bdf8;">🗓️ මෙම මාසයේ විකුණුම් (This Month's Summary)</h3>
+        <div class="dash-grid">
+          <div class="stat-card">
+            <div style="color:var(--muted);">මාසයේ මුළු විකුණුම් (Month Sales)</div>
+            <div id="mSales" class="stat-val">Rs. 0.00</div>
           </div>
-          <div class="stat-card" style="background:#0f172a;">
-            <div style="color:var(--muted);">තෝරාගත් කාලයේ ශුද්ධ ලාභය (Range Profit)</div>
-            <div id="rProfit" class="stat-val" style="color:#38bdf8;">Rs. 0.00</div>
+          <div class="stat-card">
+            <div style="color:var(--muted);">මාසයේ ශුද්ධ ලාභය (Month Profit)</div>
+            <div id="mProfit" class="stat-val" style="color:#38bdf8;">Rs. 0.00</div>
           </div>
-          <div class="stat-card" style="background:#0f172a;">
-            <div style="color:var(--muted);">මුළු බිල් ගණන (Range Bills)</div>
-            <div id="rBills" class="stat-val" style="color:#fbbf24;">0</div>
+          <div class="stat-card">
+            <div style="color:var(--muted);">මාසයේ මුළු බිල් ගණන (Month Bills)</div>
+            <div id="mBills" class="stat-val" style="color:#fbbf24;">0</div>
           </div>
-          <div class="stat-card" style="background:#0f172a;">
-            <div style="color:var(--muted);">අයවිය යුතු ණය (Total Dues)</div>
-            <div id="rDues" class="stat-val" style="color:var(--danger);">Rs. 0.00</div>
+        </div>
+
+        <!-- ROW 3: CUSTOM DATE RANGE -->
+        <div class="panel" style="margin-top:18px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+            <h3 style="margin:0; color:#fbbf24;">🔎 දින පරාසය අනුව විකුණුම් (Date Range Report)</h3>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <label style="font-size:0.85rem; color:var(--muted);">සිට (From):</label>
+              <input type="date" id="dashFromDate" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff;">
+              <label style="font-size:0.85rem; color:var(--muted);">දක්වා (To):</label>
+              <input type="date" id="dashToDate" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff;">
+              <button class="btn-primary" style="padding:8px 16px; font-size:0.95rem;" onclick="loadCustomRangeReport()">🔍 සොයන්න (Search)</button>
+            </div>
+          </div>
+
+          <div class="dash-grid" style="margin-bottom:0;">
+            <div class="stat-card" style="background:#0f172a;">
+              <div style="color:var(--muted);">තෝරාගත් කාලයේ විකුණුම් (Range Sales)</div>
+              <div id="rSales" class="stat-val">Rs. 0.00</div>
+            </div>
+            <div class="stat-card" style="background:#0f172a;">
+              <div style="color:var(--muted);">තෝරාගත් කාලයේ ශුද්ධ ලාභය (Range Profit)</div>
+              <div id="rProfit" class="stat-val" style="color:#38bdf8;">Rs. 0.00</div>
+            </div>
+            <div class="stat-card" style="background:#0f172a;">
+              <div style="color:var(--muted);">මුළු බිල් ගණන (Range Bills)</div>
+              <div id="rBills" class="stat-val" style="color:#fbbf24;">0</div>
+            </div>
+            <div class="stat-card" style="background:#0f172a;">
+              <div style="color:var(--muted);">අයවිය යුතු ණය (Total Dues)</div>
+              <div id="rDues" class="stat-val" style="color:var(--danger);">Rs. 0.00</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
   <!-- BILL DETAILS, RE-PRINT, SETTLE DUE & ADMIN EDIT/VOID MODAL -->
   <div id="billDetailModal" class="modal-overlay">
@@ -466,19 +526,14 @@
         </button>
       </div>
 
-      <!-- Admin Edit / Void Bill Security Section -->
-      <div id="bdAdminSection" style="border-top:1px dashed var(--border); padding-top:10px; margin-bottom:12px;">
-        <button id="btnUnlockBillAdmin" onclick="unlockBillAdminActions()" style="width:100%; padding:8px; background:#334155; color:#fff; border:1px solid #475569; border-radius:6px; cursor:pointer; font-size:0.88rem; font-weight:bold;">
-          🔐 Admin: බිල නිවැරදි කරන්න / අවලංගු කරන්න (Edit / Void)
+      <!-- Admin Only Edit / Void Bill Actions -->
+      <div id="bdAdminActions" style="display:none; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; border-top:1px dashed var(--border); padding-top:10px;">
+        <button onclick="editBillInPOS()" style="padding:9px; background:#0284c7; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.88rem;">
+          ✏️ Edit Bill in POS
         </button>
-        <div id="bdAdminActions" style="display:none; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
-          <button onclick="editBillInPOS()" style="padding:9px; background:#0284c7; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.88rem;">
-            ✏️ Edit Bill in POS
-          </button>
-          <button onclick="voidBillOnly()" style="padding:9px; background:var(--danger); color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.88rem;">
-            🗑️ Void / Cancel Bill
-          </button>
-        </div>
+        <button onclick="voidBillOnly()" style="padding:9px; background:var(--danger); color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.88rem;">
+          🗑️ Void / Cancel Bill
+        </button>
       </div>
 
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
@@ -583,16 +638,97 @@
     const SUPABASE_KEY = "sb_publishable_9FTxiBWkqKEYFzs6IJ54CQ_qX7GGvdl";
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // ADMIN EMAIL CONFIGURATION
+    const ADMIN_EMAIL = "samandfg@gmail.com";
+    let isCurrentUserAdmin = false;
+
     let allProducts = [];
     let allSalesHistory = [];
     let selectedBillForPrint = null;
     let cart = [];
     let pendingBatches = [];
-    let isAdminUnlocked = false;
-    const ADMIN_PIN = "1234";
 
-    window.onload = loadData;
+    // ==========================================
+    // AUTHENTICATION & SESSION CHECK
+    // ==========================================
+    window.onload = async function() {
+      const { data: { session } } = await db.auth.getSession();
+      if (session && session.user) {
+        await initializeUserSession(session.user);
+      } else {
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('appWrapper').style.display = 'none';
+        document.getElementById('loginEmail').focus();
+      }
+    };
 
+    async function handleLogin() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const errBox = document.getElementById('loginErrorMsg');
+      const btn = document.getElementById('btnLoginSubmit');
+
+      if (!email || !password) {
+        errBox.innerText = "⚠️ කරුණාකර Email සහ Password ඇතුළත් කරන්න!";
+        errBox.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "Logging in...";
+      errBox.style.display = 'none';
+
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+
+      btn.disabled = false;
+      btn.innerText = "🔐 Login (ඇතුළු වන්න)";
+
+      if (error) {
+        errBox.innerText = "❌ Email හෝ Password වැරදියි! (" + error.message + ")";
+        errBox.style.display = 'block';
+        return;
+      }
+
+      if (data && data.user) {
+        await initializeUserSession(data.user);
+      }
+    }
+
+    async function initializeUserSession(user) {
+      isCurrentUserAdmin = (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+
+      // UI Role Permissions සැකසීම
+      const badge = document.getElementById('userRoleBadge');
+      const dashBtn = document.getElementById('navBtn-dash');
+      const adminStockBadge = document.getElementById('adminStockBadge');
+
+      if (isCurrentUserAdmin) {
+        badge.innerText = "👑 ADMIN";
+        badge.className = "role-badge";
+        dashBtn.style.display = "inline-block";
+        adminStockBadge.style.display = "inline-block";
+      } else {
+        badge.innerText = "🧑‍💼 CASHIER";
+        badge.className = "role-badge cashier";
+        dashBtn.style.display = "none"; // Cashier ට Dashboard (Profit) සැඟවීම
+        adminStockBadge.style.display = "none";
+      }
+
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appWrapper').style.display = 'block';
+      switchTab('pos');
+      await loadData();
+    }
+
+    async function handleLogout() {
+      if (!confirm("🚪 පද්ධතියෙන් ඉවත් වීමට (Logout) අවශ්‍යද?")) return;
+      await db.auth.signOut();
+      location.reload();
+    }
+
+    // ==========================================
+    // LOAD DATA & DASHBOARD REPORTS
+    // ==========================================
     async function loadData() {
       const { data: prods, error: prodErr } = await db
         .from('products')
@@ -618,7 +754,8 @@
       renderQuickProducts(allProducts);
       renderStockTable(allProducts);
 
-      // 1. අද දවසේ සහ 2. මෙම මාසයේ Sales Summary (VOIDED බිල් හැර)
+      if (!isCurrentUserAdmin) return; // Cashier ට Dashboard දත්ත Load කිරීම අවශ්‍ය නැත
+
       const now = new Date();
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
@@ -636,12 +773,10 @@
         const amt = Number(s.net_total) || 0;
         const prof = Number(s.total_profit) || 0;
 
-        // මාසයේ එකතුව
         monthSales += amt;
         monthProfit += prof;
         monthBills++;
 
-        // අද දවසේ එකතුව
         if (new Date(s.created_at) >= todayStart) {
           todaySales += amt;
           todayProfit += prof;
@@ -657,7 +792,6 @@
       document.getElementById('mProfit').innerText = "Rs. " + monthProfit.toFixed(2);
       document.getElementById('mBills').innerText = monthBills;
 
-      // Date Range input වලට default ලෙස අද දිනය ලබා දීම
       const todayStr = now.toLocaleDateString('en-CA');
       if (!document.getElementById('dashFromDate').value) document.getElementById('dashFromDate').value = todayStr;
       if (!document.getElementById('dashToDate').value) document.getElementById('dashToDate').value = todayStr;
@@ -708,6 +842,7 @@
     }
 
     function switchTab(tabId, btn) {
+      if (tabId === 'dash' && !isCurrentUserAdmin) return;
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-btns button').forEach(b => b.classList.remove('active'));
       document.getElementById('tab-' + tabId).classList.add('active');
@@ -715,16 +850,6 @@
       else {
         const autoBtn = document.getElementById('navBtn-' + tabId);
         if (autoBtn) autoBtn.classList.add('active');
-      }
-      
-      if (tabId !== 'stock' && isAdminUnlocked) {
-        isAdminUnlocked = false;
-        const adminBtn = document.getElementById('btnAdminToggle');
-        if (adminBtn) {
-          adminBtn.innerText = "🔒 Admin Edit / Delete";
-          adminBtn.style.background = "#334155";
-        }
-        renderStockTable(allProducts);
       }
 
       if (tabId === 'pos') document.getElementById('searchInput').focus();
@@ -825,10 +950,8 @@
       document.getElementById('bdItemsBody').innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading items...</td></tr>';
       document.getElementById('bdSettleBox').style.display = due > 0 ? 'block' : 'none';
       
-      // Reset Admin Edit/Void lock each time modal opens
-      document.getElementById('bdAdminSection').style.display = isVoided ? 'none' : 'block';
-      document.getElementById('btnUnlockBillAdmin').style.display = 'block';
-      document.getElementById('bdAdminActions').style.display = 'none';
+      // Admin නම් පමණක් Edit / Void බිල් බටන් පෙන්වීම
+      document.getElementById('bdAdminActions').style.display = (isCurrentUserAdmin && !isVoided) ? 'grid' : 'none';
 
       document.getElementById('billDetailModal').style.display = 'flex';
 
@@ -865,19 +988,8 @@
       `;
     }
 
-    function unlockBillAdminActions() {
-      const pin = prompt("🔐 බිලක් වෙනස් කිරීමට හෝ අවලංගු කිරීමට Admin PIN අංකය ඇතුළත් කරන්න:");
-      if (pin === ADMIN_PIN) {
-        document.getElementById('btnUnlockBillAdmin').style.display = 'none';
-        document.getElementById('bdAdminActions').style.display = 'grid';
-      } else if (pin !== null) {
-        alert("❌ Admin PIN අංකය වැරදියි!");
-      }
-    }
-
-    // 1. පැරණි බිල VOID කර එහි Stock ආපසු එකතු කර, භාණ්ඩ ටික POS Cart එකට Load කිරීම
     async function editBillInPOS() {
-      if (!selectedBillForPrint) return;
+      if (!isCurrentUserAdmin || !selectedBillForPrint) return;
       const { sale, items } = selectedBillForPrint;
 
       if (!confirm("⚠️ '" + sale.invoice_no + "' බිල අවලංගු (VOID) කර එහි භාණ්ඩ නැවත Billing තිරයට ගෙන නිවැරදි කරන්නද?\n\n(මෙම බිලේ තිබූ භාණ්ඩවල තොගය ස්වයංක්‍රීයව Stock එකට නැවත එකතු වේ.)")) {
@@ -885,7 +997,6 @@
       }
 
       try {
-        // 1. Stock නැවත එකතු කිරීම
         for (const item of items) {
           const prod = allProducts.find(p => p.barcode === item.barcode && p.price === Number(item.price)) ||
                        allProducts.find(p => p.barcode === item.barcode);
@@ -895,13 +1006,11 @@
           }
         }
 
-        // 2. පරණ බිල VOIDED (Edited) ලෙස Mark කිරීම (Audit Trail ආරක්ෂාව)
         await db.from('sales').update({
           payment_method: 'VOIDED (Edited)',
           due_amount: 0
         }).eq('id', sale.id);
 
-        // 3. නව Stock දත්ත Load කර POS Cart එකට භාණ්ඩ දැමීම
         await loadData();
         cart = [];
         for (const item of items) {
@@ -934,9 +1043,8 @@
       }
     }
 
-    // 2. මුළු බිලම VOID / Cancel කිරීම (Stock ආපසු එකතු කිරීම සමඟ)
     async function voidBillOnly() {
-      if (!selectedBillForPrint) return;
+      if (!isCurrentUserAdmin || !selectedBillForPrint) return;
       const { sale, items } = selectedBillForPrint;
 
       if (!confirm("🚨 අවවාදයයි: '" + sale.invoice_no + "' බිල සම්පූර්ණයෙන්ම අවලංගු (VOID) කර එහි සියලුම භාණ්ඩ Stock එකට නැවත එකතු කරන්නද?")) {
@@ -1058,13 +1166,10 @@
     function renderQuickProducts(list) {
       const box = document.getElementById('quickProducts');
       
-      // එකම Barcode එකට මිල කිහිපයක් ඇත්නම්, Stock > 0 ඇති මිල පමණක් පෙන්වීම (Stock = 0 පරණ මිල සැඟවීම)
       const visibleList = list.filter(p => {
         if (p.stock > 0) return true;
-        // Stock 0 නම්, එම Barcode එකටම Stock > 0 තව Batch එකක් තිබේදැයි බැලීම
         const hasActiveBatch = allProducts.some(other => other.barcode === p.barcode && other.stock > 0);
-        if (hasActiveBatch) return false; // අලුත් මිල තිබේ නම් 0 වූ පරණ මිල සඟවන්න
-        // සියලුම Batches 0 නම්, අලුත්ම (අවසාන) Batch එක පමණක් පෙන්වන්න
+        if (hasActiveBatch) return false;
         const sameCodeItems = allProducts.filter(other => other.barcode === p.barcode);
         return sameCodeItems[sameCodeItems.length - 1].id === p.id;
       });
@@ -1372,29 +1477,11 @@
       window.print();
     }
 
-    // ADMIN MODE (EDIT & DELETE PRODUCTS)
-    function toggleAdminMode() {
-      if (!isAdminUnlocked) {
-        const pin = prompt("🔐 Admin රහස් අංකය (PIN) ඇතුළත් කරන්න:");
-        if (pin === ADMIN_PIN) {
-          isAdminUnlocked = true;
-          const btn = document.getElementById('btnAdminToggle');
-          btn.innerText = "🔓 Lock Admin Mode";
-          btn.style.background = "var(--danger)";
-          renderStockTable(allProducts);
-        } else if (pin !== null) {
-          alert("❌ රහස් අංකය වැරදියි!");
-        }
-      } else {
-        isAdminUnlocked = false;
-        const btn = document.getElementById('btnAdminToggle');
-        btn.innerText = "🔒 Admin Edit / Delete";
-        btn.style.background = "#334155";
-        renderStockTable(allProducts);
-      }
-    }
-
+    // ==========================================
+    // ADMIN STOCK EDIT & DELETE
+    // ==========================================
     async function confirmDeleteProduct(id, name, price) {
+      if (!isCurrentUserAdmin) return;
       if (confirm("⚠️ '" + name + " (Rs. " + price + ")' පද්ධතියෙන් සම්පූර්ණයෙන් මකා දමන්නද?")) {
         const { error } = await db.from('products').delete().eq('id', id);
         if (error) alert("Error: " + error.message);
@@ -1406,6 +1493,7 @@
     }
 
     function openEditModal(p) {
+      if (!isCurrentUserAdmin) return;
       document.getElementById('editId').value = p.id;
       document.getElementById('editCode').value = p.barcode;
       document.getElementById('editName').value = p.name;
@@ -1421,6 +1509,7 @@
     }
 
     async function submitEditProduct() {
+      if (!isCurrentUserAdmin) return;
       const id = Number(document.getElementById('editId').value);
       const updated = {
         barcode: document.getElementById('editCode').value.trim(),
@@ -1455,7 +1544,7 @@
             ${p.stock}
           </td>
           <td style="text-align:right; white-space:nowrap;">
-            ${isAdminUnlocked ? `
+            ${isCurrentUserAdmin ? `
               <button onclick='openEditModal(${JSON.stringify(p)})' style="background:#3b82f6; color:#fff; border:none; border-radius:4px; padding:4px 8px; cursor:pointer; margin-right:4px;">✏️ Edit</button>
               <button class="btn-del" onclick="confirmDeleteProduct(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${p.price})">🗑️ Delete</button>
             ` : ''}
