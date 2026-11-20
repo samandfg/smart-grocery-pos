@@ -322,7 +322,7 @@
               </div>
               <div class="tot-row">
                 <span>Cash Given (දුන් මුදල):</span>
-                <input type="number" id="inpCash" class="num-input" placeholder="0" oninput="recalcTotals()" onwheel="this.blur()" onkeydown="if(event.key==='Enter'){ event.preventDefault(); checkout(true); }">
+                <input type="number" id="inpCash" class="num-input" placeholder="0" oninput="recalcTotals()" onwheel="this.blur()">
               </div>
               <div class="tot-row" style="color: #fbbf24; font-weight: bold; font-size: 1.1rem; margin-top:10px;">
                 <span id="lblBalanceTitle">Balance (ඉතිරි මුදල):</span>
@@ -330,11 +330,16 @@
               </div>
               <div class="tot-row" style="margin-top:12px; border-top:1px solid var(--border); padding-top:10px;">
                 <span>Payment:</span>
-                <select id="selPayment" style="background:var(--card); color:#fff; border:1px solid var(--border); padding:6px 10px; border-radius:4px;">
-                  <option value="Cash">Cash (මුදල්)</option>
-                  <option value="Credit">Credit (සම්පූර්ණ ණයට)</option>
-                </select>
+                <select id="selPayment" onchange="onPaymentMethodChange()" style="padding:8px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff; font-weight:bold;">
+              <option value="Cash">Cash (මුදල්)</option>
+              <option value="Card">💳 Card (බැංකු කාඩ්පත්)</option>
+              <option value="Cash + Card">💵+💳 Cash + Card (කොටසක් අතින් / කොටසක් Card)</option>
+              <option value="Credit">Credit / ණයට</option>
+            </select>
               </div>
+			  <div id="splitCardInfo" style="display:none; background:#0f172a; border:1px solid #38bdf8; color:#38bdf8; padding:8px 10px; border-radius:6px; margin-bottom:10px; font-weight:bold; text-align:center;">
+            💳 Card මුදල (Card Amount): Rs. 0.00
+          </div>
               <input type="text" id="inpCustNote" placeholder="ණය මුදලක් ඇත්නම් පාරිභෝගිකයාගේ නම..." style="width:100%; margin-top:8px; padding:8px; background:var(--card); border:1px solid var(--border); color:#fff; border-radius:4px;">
             </div>
 
@@ -711,7 +716,8 @@
       <tr><td>Subtotal:</td><td class="r-right" id="rSub"></td></tr>
       <tr><td>Discount:</td><td class="r-right" id="rDisc"></td></tr>
       <tr class="r-bold" style="font-size:12px;"><td>TOTAL:</td><td class="r-right" id="rNet"></td></tr>
-      <tr><td>Paid (Cash):</td><td class="r-right" id="rCash"></td></tr>
+      <tr id="rCashRow"><td id="rCashLabel">Paid (Cash):</td><td class="r-right" id="rCash"></td></tr>
+      <tr id="rCardRow" style="display:none;"><td>Paid (Card):</td><td class="r-right" id="rCard"></td></tr>
       <tr id="rBalRow"><td>Balance:</td><td class="r-right" id="rBal"></td></tr>
       <tr id="rDueRow" class="r-bold" style="display:none;"><td>DUE (ණය):</td><td class="r-right" id="rDue"></td></tr>
     </table>
@@ -1640,6 +1646,7 @@
       const { sale, items } = selectedBillForPrint;
       const due = Number(sale.due_amount || 0);
       const paid = sale.paid_amount !== null && sale.paid_amount !== undefined ? Number(sale.paid_amount) : Number(sale.net_total);
+      const pm = sale.payment_method || 'Cash';
 
       document.getElementById('rInvNo').innerText = sale.invoice_no;
       document.getElementById('rDate').innerText = new Date(sale.created_at).toLocaleString();
@@ -1661,7 +1668,29 @@
       document.getElementById('rSub').innerText = Number(sale.subtotal).toFixed(2);
       document.getElementById('rDisc').innerText = Number(sale.discount || 0).toFixed(2);
       document.getElementById('rNet').innerText = "Rs. " + Number(sale.net_total).toFixed(2);
-      document.getElementById('rCash').innerText = paid.toFixed(2);
+
+      const cashRow = document.getElementById('rCashRow');
+      const cardRow = document.getElementById('rCardRow');
+
+      if (pm.startsWith('Cash + Card')) {
+        const match = pm.match(/Cash:\s*([\d.]+)\s*\|\s*Card:\s*([\d.]+)/);
+        const cashPart = match ? Number(match[1]) : 0;
+        const cardPart = match ? Number(match[2]) : paid;
+        cashRow.style.display = 'table-row';
+        document.getElementById('rCashLabel').innerText = "Paid (Cash):";
+        document.getElementById('rCash').innerText = cashPart.toFixed(2);
+        cardRow.style.display = 'table-row';
+        document.getElementById('rCard').innerText = cardPart.toFixed(2);
+      } else if (pm === 'Card') {
+        cashRow.style.display = 'none';
+        cardRow.style.display = 'table-row';
+        document.getElementById('rCard').innerText = paid.toFixed(2);
+      } else {
+        cashRow.style.display = 'table-row';
+        document.getElementById('rCashLabel').innerText = "Paid (Cash):";
+        document.getElementById('rCash').innerText = paid.toFixed(2);
+        cardRow.style.display = 'none';
+      }
 
       if (due > 0) {
         document.getElementById('rBalRow').style.display = 'none';
@@ -1685,18 +1714,7 @@
       renderQuickProducts(filtered);
     });
 
-    searchInput.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        const q = this.value.trim();
-        if (!q) return;
-        const matches = allProducts.filter(p => p.barcode.toLowerCase() === q.toLowerCase());
-        if (matches.length > 0) {
-          handleProductSelection(matches);
-          this.value = '';
-          renderQuickProducts(allProducts);
-        }
-      }
-    });
+    
 
     function renderQuickProducts(list) {
       const box = document.getElementById('quickProducts');
@@ -1811,6 +1829,10 @@
         }
         cart[index].qty = num;
         renderCart();
+		const sInp = document.getElementById('searchInput');
+      if (sInp && document.getElementById('batchModal').style.display !== 'flex') {
+        sInp.focus();
+      }
       }
     }
 
@@ -1824,6 +1846,8 @@
       document.getElementById('inpDiscount').value = '';
       document.getElementById('inpCash').value = '';
       document.getElementById('inpCustNote').value = '';
+	  document.getElementById('selPayment').value = 'Cash';
+      if (typeof onPaymentMethodChange === 'function') onPaymentMethodChange();
       document.getElementById('selPayment').value = 'Cash';
       document.getElementById('editBanner').style.display = 'none';
       renderCart();
@@ -1876,7 +1900,47 @@
 
       document.getElementById('lblSubtotal').innerText = "Rs. " + subtotal.toFixed(2);
       document.getElementById('lblNetTotal').innerText = "Rs. " + netTotal.toFixed(2);
+	  const curMethod = document.getElementById('selPayment')?.value;
+      const splitBox = document.getElementById('splitCardInfo');
+      if (curMethod === 'Cash + Card' && splitBox) {
+        const cardPart = Math.max(0, netTotal - cash);
+        splitBox.innerText = `💳 Card මුදල (Card Amount): Rs. ${cardPart.toFixed(2)}`;
+      }
       return { subtotal, discount, netTotal, cash, balance, due, rawCash };
+    }
+	function onPaymentMethodChange() {
+      const method = document.getElementById('selPayment').value;
+      const cashInp = document.getElementById('inpCash');
+      const noteInp = document.getElementById('inpCustNote');
+      const splitBox = document.getElementById('splitCardInfo');
+      const totals = recalcTotals();
+      const wasReadOnly = cashInp.readOnly; // කලින් Card තෝරලා තිබුණාදැයි බැලීම
+
+      if (splitBox) splitBox.style.display = (method === 'Cash + Card') ? 'block' : 'none';
+
+      if (method === 'Card') {
+        cashInp.value = totals.netTotal > 0 ? totals.netTotal.toFixed(2) : '';
+        cashInp.readOnly = true;
+        cashInp.style.opacity = "0.7";
+        noteInp.placeholder = "💳 Card Ref / අවසාන ඉලක්කම් 4 (අත්‍යවශ්‍ය නොවේ)...";
+      } else if (method === 'Cash + Card') {
+        cashInp.readOnly = false;
+        cashInp.style.opacity = "1";
+        if (wasReadOnly) cashInp.value = ''; // Card වල සිට මාරු වූයේ නම් පමණක් හිස් කරන්න
+        noteInp.placeholder = "💳 Card Ref (අත්‍යවශ්‍ය නොවේ)...";
+        cashInp.focus();
+      } else if (method === 'Credit') {
+        cashInp.readOnly = false;
+        cashInp.style.opacity = "1";
+        if (wasReadOnly) cashInp.value = ''; // Card වල සිට මාරු වූයේ නම් පමණක් හිස් කරන්න
+        noteInp.placeholder = "⚠️ ණයගැතියාගේ නම ඇතුළත් කරන්න...";
+      } else {
+        cashInp.readOnly = false;
+        cashInp.style.opacity = "1";
+        if (wasReadOnly) cashInp.value = '';
+        noteInp.placeholder = "ණය මුදලක් ඇත්නම් පාරිභෝගිකයාගේ නම...";
+      }
+      recalcTotals();
     }
 
     async function checkout(shouldPrint) {
@@ -1888,7 +1952,22 @@
       let paymentMethod = document.getElementById('selPayment').value;
       const customerNote = document.getElementById('inpCustNote').value.trim();
 
-      if (paymentMethod === 'Cash' && totals.rawCash === '') {
+      if (paymentMethod === 'Card') {
+        totals.cash = totals.netTotal;
+        totals.due = 0;
+        totals.balance = 0;
+      } else if (paymentMethod === 'Cash + Card') {
+        if (totals.rawCash === '' || totals.cash <= 0 || totals.cash >= totals.netTotal) {
+          alert("⚠️ කරුණාකර අතින් දෙන මුදල (Cash Given) නිවැරදිව ඇතුළත් කරන්න!\n(සම්පූර්ණ බිලම Card නම් 'Card' තෝරන්න)");
+          document.getElementById('inpCash').focus();
+          return;
+        }
+        const cardAmt = totals.netTotal - totals.cash;
+        paymentMethod = `Cash + Card (Cash: ${totals.cash.toFixed(2)} | Card: ${cardAmt.toFixed(2)})`;
+        totals.cash = totals.netTotal;
+        totals.due = 0;
+        totals.balance = 0;
+      } else if (paymentMethod === 'Cash' && totals.rawCash === '') {
         alert("⚠️ කරුණාකර පාරිභෝගිකයා දුන් මුදල (Cash Given) ඇතුළත් කරන්න!\n(සම්පූර්ණයෙන්ම ණයට නම් Payment = Credit තෝරන්න)");
         document.getElementById('inpCash').focus();
         return;
@@ -1960,13 +2039,18 @@
         }
 
         if (shouldPrint) {
-          prepareAndPrint58mm(invNo, dateTimeStr, totals, customerNote);
+          prepareAndPrint58mm(invNo, dateTimeStr, totals, customerNote, paymentMethod);
         } else {
           alert("✅ බිල් එක සාර්ථකව Save විය! (" + invNo + ")");
         }
 
         clearCart();
         await loadData();
+		const sInp = document.getElementById('searchInput');
+        if (sInp) {
+          sInp.focus();
+          setTimeout(() => sInp.focus(), 200);
+        }
       } catch (err) {
         alert("Error: " + err.message);
       } finally {
@@ -1976,7 +2060,7 @@
       }
     }
 
-    function prepareAndPrint58mm(invNo, dateTime, totals, customerNote) {
+    function prepareAndPrint58mm(invNo, dateTime, totals, customerNote, paymentMethod = 'Cash') {
       document.getElementById('rInvNo').innerText = invNo;
       document.getElementById('rDate').innerText = dateTime;
       if (customerNote) {
@@ -1997,7 +2081,29 @@
       document.getElementById('rSub').innerText = totals.subtotal.toFixed(2);
       document.getElementById('rDisc').innerText = totals.discount.toFixed(2);
       document.getElementById('rNet').innerText = "Rs. " + totals.netTotal.toFixed(2);
-      document.getElementById('rCash').innerText = totals.cash.toFixed(2);
+
+      const cashRow = document.getElementById('rCashRow');
+      const cardRow = document.getElementById('rCardRow');
+
+      if (paymentMethod.startsWith('Cash + Card')) {
+        const match = paymentMethod.match(/Cash:\s*([\d.]+)\s*\|\s*Card:\s*([\d.]+)/);
+        const cashPart = match ? Number(match[1]) : 0;
+        const cardPart = match ? Number(match[2]) : totals.netTotal;
+        cashRow.style.display = 'table-row';
+        document.getElementById('rCashLabel').innerText = "Paid (Cash):";
+        document.getElementById('rCash').innerText = cashPart.toFixed(2);
+        cardRow.style.display = 'table-row';
+        document.getElementById('rCard').innerText = cardPart.toFixed(2);
+      } else if (paymentMethod === 'Card') {
+        cashRow.style.display = 'none';
+        cardRow.style.display = 'table-row';
+        document.getElementById('rCard').innerText = totals.netTotal.toFixed(2);
+      } else {
+        cashRow.style.display = 'table-row';
+        document.getElementById('rCashLabel').innerText = "Paid (Cash):";
+        document.getElementById('rCash').innerText = totals.cash.toFixed(2);
+        cardRow.style.display = 'none';
+      }
 
       if (totals.due > 0) {
         document.getElementById('rBalRow').style.display = 'none';
@@ -2223,6 +2329,65 @@
         });
       }
     });
+	// FAST KEYBOARD-ONLY BILLING FLOW (SEARCH / CLICK -> CASH GIVEN -> SAVE & PRINT)
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+
+      // Billing Tab එක Active නැත්නම් හෝ Popup Modal එකක් Open වී ඇත්නම් නවත්වන්න
+      if (!document.getElementById('tab-pos').classList.contains('active')) return;
+      if (document.getElementById('batchModal').style.display === 'flex' ||
+          document.getElementById('adminPinModal').style.display === 'flex' ||
+          document.getElementById('billDetailModal').style.display === 'flex' ||
+          document.getElementById('editModal').style.display === 'flex') {
+        return;
+      }
+
+      const active = document.activeElement;
+      const searchInp = document.getElementById('searchInput');
+      const cashInp = document.getElementById('inpCash');
+      const selPay = document.getElementById('selPayment');
+      const noteInp = document.getElementById('inpCustNote');
+      const discInp = document.getElementById('inpDiscount');
+
+      // 1. Search කොටුවේදී හෝ කාඩ් එකක් Click කළ පසු (body) Enter එබූ විට
+      if (active === searchInp || active === document.body) {
+        e.preventDefault();
+        const q = searchInp ? searchInp.value.trim() : '';
+
+        if (active === searchInp && q !== '') {
+          const matches = allProducts.filter(p => p.barcode.toLowerCase() === q.toLowerCase());
+          if (matches.length > 0) {
+            handleProductSelection(matches);
+            searchInp.value = '';
+            renderQuickProducts(allProducts);
+          } else {
+            alert("⚠️ '" + q + "' කේතයට අදාළ භාණ්ඩයක් හමු නොවීය!");
+            searchInp.select();
+          }
+        } else if (cart.length > 0) {
+          if (cashInp && !cashInp.readOnly) {
+            cashInp.focus();
+            cashInp.select();
+          } else {
+            checkout(true);
+          }
+        }
+      }
+      // 2. Discount කොටුවේදී Enter එබුවොත් -> Cash Given කොටුවට පනින්න
+      else if (active === discInp) {
+        e.preventDefault();
+        if (cashInp && !cashInp.readOnly) {
+          cashInp.focus();
+          cashInp.select();
+        }
+      }
+      // 3. Cash Given, Payment හෝ Note කොටුවේදී Enter එබුවොත් -> Save & Print!
+      else if (active === cashInp || active === selPay || active === noteInp) {
+        e.preventDefault();
+        checkout(true);
+      }
+    });
+      
   </script>
 </body>
 </html>
