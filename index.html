@@ -405,11 +405,16 @@
         </div>
 
         <div class="panel">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
             <h3 style="margin:0;">📋 දැනට පවතින තොග (Current Inventory)</h3>
-            <span id="adminStockBadge" style="display:none; font-size:0.85rem; color:var(--accent); font-weight:bold;">
-              👑 Admin Edit / Delete Active
-            </span>
+            <div>
+              <span id="adminStockBadge" style="display:none; font-size:0.85rem; color:var(--accent); font-weight:bold;">
+                👑 Admin Edit / Delete Active
+              </span>
+              <button id="btnStockOverride" onclick="toggleStockOverride()" style="background:#334155; color:#fff; border:1px solid #475569; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.85rem;">
+                🔐 Admin Override (Edit / Delete)
+              </button>
+            </div>
           </div>
           <table>
             <thead>
@@ -528,14 +533,19 @@
         </button>
       </div>
 
-      <!-- Admin Only Edit / Void Bill Actions -->
-      <div id="bdAdminActions" style="display:none; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; border-top:1px dashed var(--border); padding-top:10px;">
-        <button onclick="editBillInPOS()" style="padding:9px; background:#0284c7; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.88rem;">
-          ✏️ Edit Bill in POS
+      <!-- Admin Override / Edit / Void Bill Actions -->
+      <div id="bdAdminWrapper" style="margin-bottom:12px; border-top:1px dashed var(--border); padding-top:10px;">
+        <button id="btnAdminOverride" onclick="requestAdminOverride()" style="width:100%; padding:8px; background:#334155; color:#fff; border:1px solid #475569; border-radius:6px; cursor:pointer; font-size:0.88rem; font-weight:bold;">
+          🔐 Admin Override (බිල නිවැරදි / අවලංගු කරන්න)
         </button>
-        <button onclick="voidBillOnly()" style="padding:9px; background:var(--danger); color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.88rem;">
-          🗑️ Void / Cancel Bill
-        </button>
+        <div id="bdAdminActions" style="display:none; grid-template-columns:1fr 1fr; gap:8px;">
+          <button onclick="editBillInPOS()" style="padding:9px; background:#0284c7; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.88rem;">
+            ✏️ Edit Bill in POS
+          </button>
+          <button onclick="voidBillOnly()" style="padding:9px; background:var(--danger); color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.88rem;">
+            🗑️ Void / Cancel Bill
+          </button>
+        </div>
       </div>
 
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
@@ -854,6 +864,17 @@
         if (autoBtn) autoBtn.classList.add('active');
       }
 
+      // වෙනත් Tab එකකට මාරු වූ සැණින් Stock Admin Override එක ස්වයංක්‍රීයව Lock කිරීම
+      if (tabId !== 'stock' && isStockOverrideUnlocked) {
+        isStockOverrideUnlocked = false;
+        const overrideBtn = document.getElementById('btnStockOverride');
+        if (overrideBtn) {
+          overrideBtn.innerText = "🔐 Admin Override (Edit / Delete)";
+          overrideBtn.style.background = "#334155";
+        }
+        renderStockTable(allProducts);
+      }
+
       if (tabId === 'pos') document.getElementById('searchInput').focus();
       if (tabId === 'history') loadBillHistory();
       if (tabId === 'stock') document.getElementById('pCode').focus();
@@ -942,6 +963,20 @@
       }).join('');
     }
 
+    const OVERRIDE_PIN = "1234"; // ඔබට අවශ්‍ය Admin PIN එක මෙතැනින් වෙනස් කළ හැක
+    let isBillOverrideUnlocked = false;
+
+    function requestAdminOverride() {
+      const pin = prompt("🔐 බිල නිවැරදි කිරීමට හෝ අවලංගු කිරීමට Admin PIN අංකය ඇතුළත් කරන්න:");
+      if (pin === OVERRIDE_PIN) {
+        isBillOverrideUnlocked = true;
+        document.getElementById('btnAdminOverride').style.display = 'none';
+        document.getElementById('bdAdminActions').style.display = 'grid';
+      } else if (pin !== null) {
+        alert("❌ Admin PIN අංකය වැරදියි!");
+      }
+    }
+
     async function viewBillDetails(sale) {
       const isVoided = sale.payment_method && sale.payment_method.startsWith('VOIDED');
       const due = isVoided ? 0 : Number(sale.due_amount || 0);
@@ -952,8 +987,21 @@
       document.getElementById('bdItemsBody').innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading items...</td></tr>';
       document.getElementById('bdSettleBox').style.display = due > 0 ? 'block' : 'none';
       
-      // Admin නම් පමණක් Edit / Void බිල් බටන් පෙන්වීම
-      document.getElementById('bdAdminActions').style.display = (isCurrentUserAdmin && !isVoided) ? 'grid' : 'none';
+      // Reset override state
+      isBillOverrideUnlocked = isCurrentUserAdmin;
+      const adminWrapper = document.getElementById('bdAdminWrapper');
+      if (isVoided) {
+        adminWrapper.style.display = 'none';
+      } else {
+        adminWrapper.style.display = 'block';
+        if (isCurrentUserAdmin) {
+          document.getElementById('btnAdminOverride').style.display = 'none';
+          document.getElementById('bdAdminActions').style.display = 'grid';
+        } else {
+          document.getElementById('btnAdminOverride').style.display = 'block';
+          document.getElementById('bdAdminActions').style.display = 'none';
+        }
+      }
 
       document.getElementById('billDetailModal').style.display = 'flex';
 
@@ -991,7 +1039,7 @@
     }
 
     async function editBillInPOS() {
-      if (!isCurrentUserAdmin || !selectedBillForPrint) return;
+      if ((!isCurrentUserAdmin && !isBillOverrideUnlocked) || !selectedBillForPrint) return;
       const { sale, items } = selectedBillForPrint;
 
       if (!confirm("⚠️ '" + sale.invoice_no + "' බිල අවලංගු (VOID) කර එහි භාණ්ඩ නැවත Billing තිරයට ගෙන නිවැරදි කරන්නද?\n\n(මෙම බිලේ තිබූ භාණ්ඩවල තොගය ස්වයංක්‍රීයව Stock එකට නැවත එකතු වේ.)")) {
@@ -1046,7 +1094,7 @@
     }
 
     async function voidBillOnly() {
-      if (!isCurrentUserAdmin || !selectedBillForPrint) return;
+      if ((!isCurrentUserAdmin && !isBillOverrideUnlocked) || !selectedBillForPrint) return;
       const { sale, items } = selectedBillForPrint;
 
       if (!confirm("🚨 අවවාදයයි: '" + sale.invoice_no + "' බිල සම්පූර්ණයෙන්ම අවලංගු (VOID) කර එහි සියලුම භාණ්ඩ Stock එකට නැවත එකතු කරන්නද?")) {
@@ -1480,10 +1528,34 @@
     }
 
     // ==========================================
-    // ADMIN STOCK EDIT & DELETE
+    // ADMIN STOCK EDIT & DELETE (WITH OVERRIDE)
     // ==========================================
+    let isStockOverrideUnlocked = false;
+
+    function toggleStockOverride() {
+      if (isCurrentUserAdmin) return;
+      if (!isStockOverrideUnlocked) {
+        const pin = prompt("🔐 තොග වෙනස් කිරීමට හෝ මැකීමට Admin PIN අංකය ඇතුළත් කරන්න:");
+        if (pin === OVERRIDE_PIN) {
+          isStockOverrideUnlocked = true;
+          const btn = document.getElementById('btnStockOverride');
+          btn.innerText = "🔓 Lock Stock Edit";
+          btn.style.background = "var(--danger)";
+          renderStockTable(allProducts);
+        } else if (pin !== null) {
+          alert("❌ Admin PIN අංකය වැරදියි!");
+        }
+      } else {
+        isStockOverrideUnlocked = false;
+        const btn = document.getElementById('btnStockOverride');
+        btn.innerText = "🔐 Admin Override (Edit / Delete)";
+        btn.style.background = "#334155";
+        renderStockTable(allProducts);
+      }
+    }
+
     async function confirmDeleteProduct(id, name, price) {
-      if (!isCurrentUserAdmin) return;
+      if (!isCurrentUserAdmin && !isStockOverrideUnlocked) return;
       if (confirm("⚠️ '" + name + " (Rs. " + price + ")' පද්ධතියෙන් සම්පූර්ණයෙන් මකා දමන්නද?")) {
         const { error } = await db.from('products').delete().eq('id', id);
         if (error) alert("Error: " + error.message);
@@ -1495,7 +1567,7 @@
     }
 
     function openEditModal(p) {
-      if (!isCurrentUserAdmin) return;
+      if (!isCurrentUserAdmin && !isStockOverrideUnlocked) return;
       document.getElementById('editId').value = p.id;
       document.getElementById('editCode').value = p.barcode;
       document.getElementById('editName').value = p.name;
@@ -1511,7 +1583,7 @@
     }
 
     async function submitEditProduct() {
-      if (!isCurrentUserAdmin) return;
+      if (!isCurrentUserAdmin && !isStockOverrideUnlocked) return;
       const id = Number(document.getElementById('editId').value);
       const updated = {
         barcode: document.getElementById('editCode').value.trim(),
@@ -1535,6 +1607,10 @@
     }
 
     function renderStockTable(list) {
+      const canEdit = isCurrentUserAdmin || isStockOverrideUnlocked;
+      const overrideBtn = document.getElementById('btnStockOverride');
+      if (overrideBtn) overrideBtn.style.display = isCurrentUserAdmin ? 'none' : 'inline-block';
+
       document.getElementById('stockTableBody').innerHTML = list.map(p => `
         <tr>
           <td>${p.barcode}</td>
@@ -1546,7 +1622,7 @@
             ${p.stock}
           </td>
           <td style="text-align:right; white-space:nowrap;">
-            ${isCurrentUserAdmin ? `
+            ${canEdit ? `
               <button onclick='openEditModal(${JSON.stringify(p)})' style="background:#3b82f6; color:#fff; border:none; border-radius:4px; padding:4px 8px; cursor:pointer; margin-right:4px;">✏️ Edit</button>
               <button class="btn-del" onclick="confirmDeleteProduct(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${p.price})">🗑️ Delete</button>
             ` : ''}
