@@ -114,6 +114,12 @@
       padding: 10px; cursor: pointer; transition: 0.15s;
     }
     .prod-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .prod-card.kbd-selected {
+      border: 2px solid #38bdf8 !important;
+      background: #16243b !important;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+      transform: translateY(-2px);
+    }
     .prod-card.low-stock-card { border-color: rgba(239, 68, 68, 0.65); background: rgba(239, 68, 68, 0.08); }
     .prod-name { font-weight: 600; font-size: 0.88rem; margin-bottom: 4px; }
     .prod-price { color: var(--accent); font-weight: bold; font-size: 0.92rem; }
@@ -314,7 +320,7 @@
               </div>
               <div class="tot-row">
                 <span>Discount (වට්ටම් Rs.):</span>
-                <input type="number" id="inpDiscount" class="num-input" placeholder="0" min="0" oninput="recalcTotals()" onwheel="this.blur()">
+                <input type="number" id="inpDiscount" class="num-input" value="0.00" readonly style="opacity:0.85; cursor:not-allowed; color:#38bdf8;" title="භාණ්ඩ සඳහා ලබා දී ඇති මුළු වට්ටම">
               </div>
               <div class="tot-row grand">
                 <span>TOTAL:</span>
@@ -331,15 +337,15 @@
               <div class="tot-row" style="margin-top:12px; border-top:1px solid var(--border); padding-top:10px;">
                 <span>Payment:</span>
                 <select id="selPayment" onchange="onPaymentMethodChange()" style="padding:8px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff; font-weight:bold;">
-              <option value="Cash">Cash (මුදල්)</option>
-              <option value="Card">💳 Card (බැංකු කාඩ්පත්)</option>
-              <option value="Cash + Card">💵+💳 Cash + Card (කොටසක් අතින් / කොටසක් Card)</option>
-              <option value="Credit">Credit / ණයට</option>
-            </select>
+                  <option value="Cash">Cash (මුදල්)</option>
+                  <option value="Card">💳 Card (බැංකු කාඩ්පත්)</option>
+                  <option value="Cash + Card">💵+💳 Cash + Card (කොටසක් අතින් / කොටසක් Card)</option>
+                  <option value="Credit">Credit / ණයට</option>
+                </select>
               </div>
-			  <div id="splitCardInfo" style="display:none; background:#0f172a; border:1px solid #38bdf8; color:#38bdf8; padding:8px 10px; border-radius:6px; margin-bottom:10px; font-weight:bold; text-align:center;">
-            💳 Card මුදල (Card Amount): Rs. 0.00
-          </div>
+              <div id="splitCardInfo" style="display:none; background:#0f172a; border:1px solid #38bdf8; color:#38bdf8; padding:8px 10px; border-radius:6px; margin-bottom:10px; font-weight:bold; text-align:center;">
+                💳 Card මුදල (Card Amount): Rs. 0.00
+              </div>
               <input type="text" id="inpCustNote" placeholder="ණය මුදලක් ඇත්නම් පාරිභෝගිකයාගේ නම..." style="width:100%; margin-top:8px; padding:8px; background:var(--card); border:1px solid var(--border); color:#fff; border-radius:4px;">
             </div>
 
@@ -419,6 +425,10 @@
               <label>එකතු කරන තොගය (Stock Qty) *</label>
               <input type="number" id="pStock" step="0.01" placeholder="0" onwheel="this.blur()">
             </div>
+            <div class="form-group">
+              <label>ඒකකයකට වට්ටම (Discount Rs.)</label>
+              <input type="number" id="pDiscount" step="0.01" placeholder="0.00" onwheel="this.blur()">
+            </div>
           </div>
           <button class="btn-primary" style="margin-top:12px;" onclick="saveNewProduct()">Save Product / Add Stock</button>
         </div>
@@ -443,6 +453,7 @@
                 <th>Unit</th>
                 <th>Cost</th>
                 <th>Price</th>
+                <th>Disc</th>
                 <th>Stock</th>
                 <th></th>
               </tr>
@@ -522,14 +533,15 @@
               <div id="rDues" class="stat-val" style="color:var(--danger);">Rs. 0.00</div>
             </div>
           </div>
-		  <!-- ROW 4: BUTTON TO OPEN FULL-SCREEN REPORTS -->
-        <div style="margin-top:18px; text-align:right;">
-          <button class="btn-primary" style="padding:12px 22px; font-size:1rem; background:#38bdf8; color:#020617;" onclick="openReportsScreen()">
-            📑 සවිස්තරාත්මක ව්‍යාපාරික වාර්තා බලන්න (Open Business Reports) ➔
-          </button>
+
+          <!-- ROW 4: BUTTON TO OPEN FULL-SCREEN REPORTS -->
+          <div style="margin-top:18px; text-align:right;">
+            <button class="btn-primary" style="padding:12px 22px; font-size:1rem; background:#38bdf8; color:#020617;" onclick="openReportsScreen()">
+              📑 සවිස්තරාත්මක ව්‍යාපාරික වාර්තා බලන්න (Open Business Reports) ➔
+            </button>
+          </div>
         </div>
       </div>
-	  </div>
 
       <!-- TAB 5: FULL-SCREEN DETAILED BUSINESS REPORTS (ADMIN ONLY) -->
       <div id="tab-reports" class="tab-content">
@@ -572,12 +584,11 @@
             </div>
           </div>
         </div>
-        </div>
       </div>
-	  
-    
+    </div>
   </div>
-<!-- ADMIN PIN PASSWORD MODAL -->
+
+  <!-- ADMIN PIN PASSWORD MODAL -->
   <div id="adminPinModal" class="modal-overlay" style="z-index: 9999;">
     <div class="modal-box" style="max-width: 360px; text-align: center;">
       <h3 style="margin-top:0; color:#fbbf24;">🔐 Admin PIN අවශ්‍යයි</h3>
@@ -591,6 +602,7 @@
       </div>
     </div>
   </div>
+
   <!-- BILL DETAILS, RE-PRINT, SETTLE DUE & ADMIN EDIT/VOID MODAL -->
   <div id="billDetailModal" class="modal-overlay">
     <div class="modal-box">
@@ -666,9 +678,13 @@
         <label>විකුණුම් මිල (Selling Price)</label>
         <input type="number" id="editPrice" onwheel="this.blur()">
       </div>
-      <div class="form-group" style="margin-bottom:12px;">
+      <div class="form-group" style="margin-bottom:8px;">
         <label>දැනට තියෙන තොගය (Current Stock)</label>
         <input type="number" id="editStock" step="0.01" onwheel="this.blur()">
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>ඒකකයකට වට්ටම (Discount Rs.)</label>
+        <input type="number" id="editDiscount" step="0.01" placeholder="0.00" onwheel="this.blur()">
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
         <button onclick="closeEditModal()" style="padding:10px; background:transparent; border:1px solid var(--danger); color:var(--danger); border-radius:6px; cursor:pointer; font-weight:bold;">Cancel</button>
@@ -806,7 +822,7 @@
       } else {
         badge.innerText = "🧑‍💼 CASHIER";
         badge.className = "role-badge cashier";
-        dashBtn.style.display = "none"; // Cashier ට Dashboard (Profit) සැඟවීම
+        dashBtn.style.display = "none";
         adminStockBadge.style.display = "none";
       }
 
@@ -844,13 +860,14 @@
         cost: Number(p.cost) || 0,
         price: Number(p.price) || 0,
         stock: Number(p.stock) || 0,
-        reorder: Number(p.reorder) || 5
+        reorder: Number(p.reorder) || 5,
+        discount: Number(p.discount) || 0
       }));
 
       renderQuickProducts(allProducts);
       renderStockTable(allProducts);
 
-      if (!isCurrentUserAdmin) return; // Cashier ට Dashboard දත්ත Load කිරීම අවශ්‍ය නැත
+      if (!isCurrentUserAdmin) return;
 
       const now = new Date();
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
@@ -936,7 +953,8 @@
       document.getElementById('rBills').innerText = rBills;
       document.getElementById('rDues').innerText = "Rs. " + rDues.toFixed(2);
     }
-	// ==========================================
+
+    // ==========================================
     // DETAILED BUSINESS REPORTS (CSV & PRINT)
     // ==========================================
     let currentReportCSVRows = [];
@@ -945,7 +963,6 @@
     function onReportTypeChange() {
       const type = document.getElementById('repType').value;
       const dateDiv = document.getElementById('repDateInputs');
-      // ණය වාර්තාවට සහ වත්මන් Stock වාර්තාවට දින පරාසයක් අවශ්‍ය නැත
       dateDiv.style.display = (type === 'dues' || type === 'stock') ? 'none' : 'flex';
     }
 
@@ -1035,7 +1052,6 @@
         titleEl.innerText = `📦 භාණ්ඩ අනුව විකුණුම් සහ ලාභය (${fromVal} සිට ${toVal} දක්වා)`;
         currentReportFilename = `Item_Sales_${fromVal}_to_${toVal}.csv`;
 
-        // Void නොවූ valid invoices ලබාගැනීම
         const { data: validSales } = await db
           .from('sales')
           .select('invoice_no, payment_method')
@@ -1094,7 +1110,8 @@
           </tr>`;
         currentReportCSVRows.push(["", "TOTAL", "", sumTotal.toFixed(2), sumProf.toFixed(2)]);
       }
-	  // FAST-MOVING & SLOW-MOVING ITEMS REPORT
+
+      // FAST-MOVING & SLOW-MOVING ITEMS REPORT
       else if (type === 'fast' || type === 'slow') {
         const isFast = type === 'fast';
         titleEl.innerText = isFast
@@ -1102,7 +1119,6 @@
           : `🐢 හෙමින් විකිණෙන සහ නොවිකිණෙන භාණ්ඩ - Slow-Moving Items (${fromVal} සිට ${toVal} දක්වා)`;
         currentReportFilename = `${isFast ? 'Fast_Moving' : 'Slow_Moving'}_Items_${fromVal}_to_${toVal}.csv`;
 
-        // Void නොවූ valid invoices ලබාගැනීම
         const { data: validSales } = await db
           .from('sales')
           .select('invoice_no, payment_method')
@@ -1123,7 +1139,6 @@
 
         if (error) { alert("Error: " + error.message); return; }
 
-        // Barcode අනුව විකිණුණු මුළු ප්‍රමාණය ගණනය කිරීම
         const soldMap = {};
         (itemsData || []).forEach(it => {
           if (!validInvSet.has(it.invoice_no)) return;
@@ -1132,7 +1147,6 @@
           soldMap[it.barcode].total += Number(it.line_total) || 0;
         });
 
-        // දැනට පද්ධතියේ ඇති සියලුම භාණ්ඩ (Unique Barcode) ලැයිස්තුව සැකසීම
         const uniqueProductsMap = {};
         allProducts.forEach(p => {
           if (!uniqueProductsMap[p.barcode]) {
@@ -1153,17 +1167,14 @@
           };
         });
 
-        // සියලුම භාණ්ඩවල සාමාන්‍ය විකුණුම් ප්‍රමාණය (Average Sold Qty) ගණනය කිරීම
         const totalSoldAll = reportList.reduce((sum, item) => sum + item.soldQty, 0);
         const avgSoldQty = reportList.length > 0 ? (totalSoldAll / reportList.length) : 0;
 
         if (isFast) {
-          // Fast-Moving: සාමාන්‍යයට වඩා වැඩියෙන් විකිණුණු භාණ්ඩ පමණක් (වැඩිම සිට අඩුම දක්වා)
           reportList = reportList
             .filter(i => i.soldQty > 0 && i.soldQty >= avgSoldQty)
             .sort((a, b) => b.soldQty - a.soldQty);
         } else {
-          // Slow-Moving: සාමාන්‍යයට වඩා අඩුවෙන් විකිණුණු හෝ 0ක් විකිණුණු භාණ්ඩ පමණක්
           reportList = reportList
             .filter(i => i.soldQty < avgSoldQty || i.soldQty === 0)
             .sort((a, b) => a.soldQty - b.soldQty);
@@ -1256,7 +1267,7 @@
         currentReportCSVRows.push(["", "", "TOTAL DUES", "", "", totalDueSum.toFixed(2)]);
       }
 
-      // 4. STOCK VALUATION & LOW STOCK REPORT (SMART BATCH FILTERING)
+      // 4. STOCK VALUATION & LOW STOCK REPORT
       else if (type === 'stock') {
         titleEl.innerText = `🏪 වත්මන් තොග වටිනාකම සහ Low Stock වාර්තාව (${todayStr})`;
         currentReportFilename = `Stock_Valuation_${todayStr}.csv`;
@@ -1264,13 +1275,11 @@
         thead.innerHTML = `<tr><th>Code</th><th>භාණ්ඩය (Item)</th><th>Stock</th><th>ගත් මිල (Cost)</th><th>තොග වටිනාකම (Cost Val)</th><th>විකුණුම් වටිනාකම (Sell Val)</th></tr>`;
         currentReportCSVRows.push(["Code", "Item Name", "Stock Qty", "Unit Cost", "Total Cost Value", "Total Selling Value"]);
 
-        // එකම Barcode එකේ මුළු තොගය ගණනය කිරීම
         const barcodeTotalStock = {};
         allProducts.forEach(p => {
           barcodeTotalStock[p.barcode] = (barcodeTotalStock[p.barcode] || 0) + p.stock;
         });
 
-        // Stock 0 වූ පරණ මිල කාණ්ඩ (වෙනත් මිලකින් තොග ඇත්නම්) ඉවත් කිරීම
         const visibleStockList = allProducts.filter(p => {
           if (p.stock > 0) return true;
           const hasActiveBatch = allProducts.some(other => other.barcode === p.barcode && other.stock > 0);
@@ -1310,7 +1319,6 @@
         alert("⚠️ කරුණාකර පළමුව 'Generate Report' ඔබා වාර්තාව සකස් කරගන්න!");
         return;
       }
-      // සිංහල අකුරු Excel වල නිවැරදිව පෙනීමට UTF-8 BOM (\uFEFF) එකතු කිරීම
       const csvContent = "\uFEFF" + currentReportCSVRows.map(row =>
         row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
       ).join("\n");
@@ -1355,7 +1363,6 @@
         if (autoBtn) autoBtn.classList.add('active');
       }
 
-      // වෙනත් Tab එකකට මාරු වූ සැණින් Stock Admin Override එක ස්වයංක්‍රීයව Lock කිරීම
       if (tabId !== 'stock' && isStockOverrideUnlocked) {
         isStockOverrideUnlocked = false;
         const overrideBtn = document.getElementById('btnStockOverride');
@@ -1454,7 +1461,7 @@
       }).join('');
     }
 
-    const OVERRIDE_PIN = "1234"; // ඔබට අවශ්‍ය Admin PIN එක මෙතැනින් වෙනස් කළ හැක
+    const OVERRIDE_PIN = "1234";
     let isBillOverrideUnlocked = false;
 
     async function requestAdminOverride() {
@@ -1478,7 +1485,6 @@
       document.getElementById('bdItemsBody').innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading items...</td></tr>';
       document.getElementById('bdSettleBox').style.display = due > 0 ? 'block' : 'none';
       
-      // Reset override state
       isBillOverrideUnlocked = isCurrentUserAdmin;
       const adminWrapper = document.getElementById('bdAdminWrapper');
       if (isVoided) {
@@ -1566,12 +1572,12 @@
               cost: prod.cost,
               price: Number(item.price),
               maxStock: prod.stock,
+              discount: prod.discount || 0,
               qty: Number(item.qty)
             });
           }
         }
 
-        document.getElementById('inpDiscount').value = Number(sale.discount || 0) > 0 ? Number(sale.discount) : '';
         document.getElementById('inpCustNote').value = sale.customer_note || '';
         document.getElementById('editBanner').style.display = 'block';
 
@@ -1714,11 +1720,25 @@
       renderQuickProducts(filtered);
     });
 
-    
+    let displayedQuickProducts = [];
+    let selectedQuickIndex = -1;
+
+    function updateQuickCardHighlight() {
+      const cards = document.querySelectorAll('#quickProducts .prod-card');
+      cards.forEach((card, idx) => {
+        if (idx === selectedQuickIndex) {
+          card.classList.add('kbd-selected');
+          card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } else {
+          card.classList.remove('kbd-selected');
+        }
+      });
+    }
 
     function renderQuickProducts(list) {
       const box = document.getElementById('quickProducts');
-      
+      selectedQuickIndex = -1;
+
       const visibleList = list.filter(p => {
         if (p.stock > 0) return true;
         const hasActiveBatch = allProducts.some(other => other.barcode === p.barcode && other.stock > 0);
@@ -1726,6 +1746,8 @@
         const sameCodeItems = allProducts.filter(other => other.barcode === p.barcode);
         return sameCodeItems[sameCodeItems.length - 1].id === p.id;
       });
+
+      displayedQuickProducts = visibleList;
 
       if (visibleList.length === 0) {
         box.innerHTML = '<div style="color:var(--muted);">භාණ්ඩ හමු නොවීය</div>';
@@ -1737,6 +1759,7 @@
           <div class="prod-card ${isLow ? 'low-stock-card' : ''}" onclick='addToCart(${JSON.stringify(p)})'>
             <div class="prod-name">${p.name}</div>
             <div class="prod-price">Rs. ${p.price.toFixed(2)} / ${p.unit}</div>
+            ${(p.discount || 0) > 0 ? `<div style="font-size:0.75rem; color:#38bdf8; font-weight:bold;">🏷️ Disc: Rs. ${p.discount.toFixed(2)}</div>` : ''}
             <div class="prod-stock ${isLow ? 'low' : ''}">
               Stock: ${p.stock} ${p.unit} ${isLow ? '⚠️' : ''}
             </div>
@@ -1758,7 +1781,7 @@
       const listDiv = document.getElementById('batchOptionsList');
       listDiv.innerHTML = batches.map((b, i) => `
         <button class="batch-btn" onclick="selectBatch(${i})">
-          <span><strong>[${i + 1}] Rs. ${b.price.toFixed(2)}</strong> / ${b.unit}</span>
+          <span><strong>[${i + 1}] Rs. ${b.price.toFixed(2)}</strong> / ${b.unit} ${(b.discount || 0) > 0 ? `<small style="color:#38bdf8;">(-Rs.${b.discount})</small>` : ''}</span>
           <span style="color:${b.stock <= 5 ? 'var(--danger)' : 'var(--accent)'}; font-size:0.85rem;">
             Stock: ${b.stock}
           </span>
@@ -1812,10 +1835,15 @@
           cost: prod.cost,
           price: prod.price,
           maxStock: prod.stock,
+          discount: prod.discount || 0,
           qty: 1
         });
       }
       renderCart();
+      const sInp = document.getElementById('searchInput');
+      if (sInp && document.getElementById('batchModal').style.display !== 'flex') {
+        sInp.focus();
+      }
     }
 
     function updateQty(index, val) {
@@ -1829,10 +1857,10 @@
         }
         cart[index].qty = num;
         renderCart();
-		const sInp = document.getElementById('searchInput');
-      if (sInp && document.getElementById('batchModal').style.display !== 'flex') {
-        sInp.focus();
-      }
+        const sInp = document.getElementById('searchInput');
+        if (sInp && document.getElementById('batchModal').style.display !== 'flex') {
+          sInp.focus();
+        }
       }
     }
 
@@ -1843,10 +1871,10 @@
 
     function clearCart() {
       cart = [];
-      document.getElementById('inpDiscount').value = '';
+      document.getElementById('inpDiscount').value = '0.00';
       document.getElementById('inpCash').value = '';
       document.getElementById('inpCustNote').value = '';
-	  document.getElementById('selPayment').value = 'Cash';
+      document.getElementById('selPayment').value = 'Cash';
       if (typeof onPaymentMethodChange === 'function') onPaymentMethodChange();
       document.getElementById('selPayment').value = 'Cash';
       document.getElementById('editBanner').style.display = 'none';
@@ -1861,21 +1889,32 @@
         recalcTotals();
         return;
       }
-      tbody.innerHTML = cart.map((item, idx) => `
+      tbody.innerHTML = cart.map((item, idx) => {
+        const lineDisc = (item.discount || 0) * item.qty;
+        const lineNet = (item.qty * item.price) - lineDisc;
+        return `
         <tr>
-          <td>${item.name}<br><small style="color:var(--muted);">${item.unit}</small></td>
+          <td>
+            ${item.name}<br>
+            <small style="color:var(--muted);">${item.unit}</small>
+            ${lineDisc > 0 ? `<br><small style="color:#38bdf8; font-weight:bold;">🏷️ Disc: -Rs. ${lineDisc.toFixed(2)}</small>` : ''}
+          </td>
           <td><input type="number" class="qty-input" step="${item.unit === 'Kg' ? '0.05' : '1'}" value="${item.qty}" onwheel="this.blur()" onchange="updateQty(${idx}, this.value)"></td>
           <td>${item.price.toFixed(2)}</td>
-          <td>${(item.qty * item.price).toFixed(2)}</td>
+          <td>
+            ${lineNet.toFixed(2)}
+            ${lineDisc > 0 ? `<br><small style="color:var(--muted); text-decoration:line-through;">${(item.qty * item.price).toFixed(2)}</small>` : ''}
+          </td>
           <td><button class="btn-del" onclick="removeCartItem(${idx})">✕</button></td>
         </tr>
-      `).join('');
+      `}).join('');
       recalcTotals();
     }
 
     function recalcTotals() {
       const subtotal = cart.reduce((sum, item) => sum + (item.qty * item.price), 0);
-      const discount = parseFloat(document.getElementById('inpDiscount').value) || 0;
+      const discount = cart.reduce((sum, item) => sum + ((item.discount || 0) * item.qty), 0);
+      document.getElementById('inpDiscount').value = discount.toFixed(2);
       const netTotal = Math.max(0, subtotal - discount);
       const rawCash = document.getElementById('inpCash').value.trim();
       const cash = parseFloat(rawCash) || 0;
@@ -1900,7 +1939,7 @@
 
       document.getElementById('lblSubtotal').innerText = "Rs. " + subtotal.toFixed(2);
       document.getElementById('lblNetTotal').innerText = "Rs. " + netTotal.toFixed(2);
-	  const curMethod = document.getElementById('selPayment')?.value;
+      const curMethod = document.getElementById('selPayment')?.value;
       const splitBox = document.getElementById('splitCardInfo');
       if (curMethod === 'Cash + Card' && splitBox) {
         const cardPart = Math.max(0, netTotal - cash);
@@ -1908,13 +1947,14 @@
       }
       return { subtotal, discount, netTotal, cash, balance, due, rawCash };
     }
-	function onPaymentMethodChange() {
+
+    function onPaymentMethodChange() {
       const method = document.getElementById('selPayment').value;
       const cashInp = document.getElementById('inpCash');
       const noteInp = document.getElementById('inpCustNote');
       const splitBox = document.getElementById('splitCardInfo');
       const totals = recalcTotals();
-      const wasReadOnly = cashInp.readOnly; // කලින් Card තෝරලා තිබුණාදැයි බැලීම
+      const wasReadOnly = cashInp.readOnly;
 
       if (splitBox) splitBox.style.display = (method === 'Cash + Card') ? 'block' : 'none';
 
@@ -1926,13 +1966,13 @@
       } else if (method === 'Cash + Card') {
         cashInp.readOnly = false;
         cashInp.style.opacity = "1";
-        if (wasReadOnly) cashInp.value = ''; // Card වල සිට මාරු වූයේ නම් පමණක් හිස් කරන්න
+        if (wasReadOnly) cashInp.value = '';
         noteInp.placeholder = "💳 Card Ref (අත්‍යවශ්‍ය නොවේ)...";
         cashInp.focus();
       } else if (method === 'Credit') {
         cashInp.readOnly = false;
         cashInp.style.opacity = "1";
-        if (wasReadOnly) cashInp.value = ''; // Card වල සිට මාරු වූයේ නම් පමණක් හිස් කරන්න
+        if (wasReadOnly) cashInp.value = '';
         noteInp.placeholder = "⚠️ ණයගැතියාගේ නම ඇතුළත් කරන්න...";
       } else {
         cashInp.readOnly = false;
@@ -2003,8 +2043,9 @@
 
         let totalProfit = 0;
         const saleItemsPayload = cart.map(item => {
-          const lineTotal = item.qty * item.price;
-          const lineProfit = (item.price - item.cost) * item.qty;
+          const lineDisc = (item.discount || 0) * item.qty;
+          const lineTotal = (item.qty * item.price) - lineDisc;
+          const lineProfit = ((item.price - (item.discount || 0)) - item.cost) * item.qty;
           totalProfit += lineProfit;
           return {
             invoice_no: invNo,
@@ -2046,7 +2087,7 @@
 
         clearCart();
         await loadData();
-		const sInp = document.getElementById('searchInput');
+        const sInp = document.getElementById('searchInput');
         if (sInp) {
           sInp.focus();
           setTimeout(() => sInp.focus(), 200);
@@ -2070,14 +2111,18 @@
         document.getElementById('rCustRow').style.display = 'none';
       }
 
-      document.getElementById('rItemsBody').innerHTML = cart.map(i => `
+      document.getElementById('rItemsBody').innerHTML = cart.map(i => {
+        const itemDisc = (i.discount || 0) * i.qty;
+        const itemNet = (i.qty * i.price) - itemDisc;
+        return `
         <tr><td colspan="3">${i.name}</td></tr>
         <tr>
           <td>@${i.price.toFixed(2)}</td>
           <td class="r-right">${i.qty} ${i.unit}</td>
-          <td class="r-right">${(i.qty * i.price).toFixed(2)}</td>
+          <td class="r-right">${itemNet.toFixed(2)}</td>
         </tr>
-      `).join('');
+        ${itemDisc > 0 ? `<tr><td colspan="2" style="font-size:9px;">  (Discount: -${itemDisc.toFixed(2)})</td><td></td></tr>` : ''}
+      `}).join('');
       document.getElementById('rSub').innerText = totals.subtotal.toFixed(2);
       document.getElementById('rDisc').innerText = totals.discount.toFixed(2);
       document.getElementById('rNet').innerText = "Rs. " + totals.netTotal.toFixed(2);
@@ -2122,7 +2167,8 @@
     // ADMIN STOCK EDIT & DELETE (WITH OVERRIDE)
     // ==========================================
     let isStockOverrideUnlocked = false;
-	let adminPinResolver = null;
+    let adminPinResolver = null;
+
     function askAdminPin(message) {
       return new Promise(resolve => {
         adminPinResolver = resolve;
@@ -2186,6 +2232,7 @@
       document.getElementById('editCost').value = p.cost;
       document.getElementById('editPrice').value = p.price;
       document.getElementById('editStock').value = p.stock;
+      document.getElementById('editDiscount').value = p.discount || 0;
       document.getElementById('editModal').style.display = 'flex';
     }
 
@@ -2202,7 +2249,8 @@
         unit: document.getElementById('editUnit').value,
         cost: Number(document.getElementById('editCost').value),
         price: Number(document.getElementById('editPrice').value),
-        stock: Number(document.getElementById('editStock').value)
+        stock: Number(document.getElementById('editStock').value),
+        discount: Number(document.getElementById('editDiscount').value) || 0
       };
       if (!updated.barcode || !updated.name || updated.price <= 0) {
         alert("⚠️ කරුණාකර නිවැරදි විස්තර ඇතුළත් කරන්න!");
@@ -2229,6 +2277,7 @@
           <td>${p.unit}</td>
           <td>${p.cost.toFixed(2)}</td>
           <td>${p.price.toFixed(2)}</td>
+          <td style="color:#38bdf8;">${(p.discount || 0) > 0 ? 'Rs. ' + p.discount.toFixed(2) : '-'}</td>
           <td style="color:${p.stock <= 5 ? 'var(--danger)' : 'var(--accent)'}; font-weight:bold;">
             ${p.stock}
           </td>
@@ -2249,6 +2298,7 @@
       const costVal = document.getElementById('pCost').value.trim();
       const priceVal = document.getElementById('pPrice').value.trim();
       const stockVal = document.getElementById('pStock').value.trim();
+      const discVal = document.getElementById('pDiscount').value.trim();
 
       if (!code) { alert("⚠️ කරුණාකර Barcode / Short Code ඇතුළත් කරන්න!"); document.getElementById('pCode').focus(); return; }
       if (!name) { alert("⚠️ කරුණාකර භාණ්ඩයේ නම ඇතුළත් කරන්න!"); document.getElementById('pName').focus(); return; }
@@ -2259,20 +2309,21 @@
       const newCost = Number(costVal);
       const newPrice = Number(priceVal);
       const addQty = Number(stockVal);
+      const newDiscount = Number(discVal) || 0;
 
       const existingBatch = allProducts.find(p => p.barcode === code && p.price === newPrice);
 
       if (existingBatch) {
         const updatedStock = Number((existingBatch.stock + addQty).toFixed(3));
         const { error } = await db.from('products').update({
-          name: name, unit: unit, cost: newCost, stock: updatedStock
+          name: name, unit: unit, cost: newCost, stock: updatedStock, discount: newDiscount
         }).eq('id', existingBatch.id);
 
         if (error) { alert("Error: " + error.message); return; }
         alert("පවතින මිල (Rs. " + newPrice + ") යටතේ තොගයට එකතු කරන ලදී!");
       } else {
         const { error } = await db.from('products').insert([{
-          barcode: code, name: name, unit: unit, cost: newCost, price: newPrice, stock: addQty
+          barcode: code, name: name, unit: unit, cost: newCost, price: newPrice, stock: addQty, discount: newDiscount
         }]);
         if (error) { alert("Error: " + error.message); return; }
         alert("නව මිල කාණ්ඩයක් (Batch - Rs. " + newPrice + ") ලෙස ඇතුළත් කරන ලදී!");
@@ -2283,11 +2334,12 @@
       document.getElementById('pCost').value = '';
       document.getElementById('pPrice').value = '';
       document.getElementById('pStock').value = '';
+      document.getElementById('pDiscount').value = '';
       document.getElementById('pCode').focus();
       await loadData();
     }
 
-    const stockFieldOrder = ['pCode', 'pName', 'pUnit', 'pCost', 'pPrice', 'pStock'];
+    const stockFieldOrder = ['pCode', 'pName', 'pUnit', 'pCost', 'pPrice', 'pStock', 'pDiscount'];
     function checkExistingBarcode() {
       const code = document.getElementById('pCode').value.trim();
       if (!code) return false;
@@ -2298,6 +2350,7 @@
         document.getElementById('pUnit').value = latest.unit;
         document.getElementById('pCost').value = latest.cost;
         document.getElementById('pPrice').value = latest.price;
+        document.getElementById('pDiscount').value = latest.discount || 0;
         return true;
       }
       return false;
@@ -2329,11 +2382,9 @@
         });
       }
     });
-	// FAST KEYBOARD-ONLY BILLING FLOW (SEARCH / CLICK -> CASH GIVEN -> SAVE & PRINT)
-    document.addEventListener('keydown', function(e) {
-      if (e.key !== 'Enter') return;
 
-      // Billing Tab එක Active නැත්නම් හෝ Popup Modal එකක් Open වී ඇත්නම් නවත්වන්න
+    // FAST KEYBOARD-ONLY BILLING FLOW (ARROWS + SEARCH / CLICK -> CASH GIVEN -> SAVE & PRINT)
+    document.addEventListener('keydown', function(e) {
       if (!document.getElementById('tab-pos').classList.contains('active')) return;
       if (document.getElementById('batchModal').style.display === 'flex' ||
           document.getElementById('adminPinModal').style.display === 'flex' ||
@@ -2349,19 +2400,62 @@
       const noteInp = document.getElementById('inpCustNote');
       const discInp = document.getElementById('inpDiscount');
 
-      // 1. Search කොටුවේදී හෝ කාඩ් එකක් Click කළ පසු (body) Enter එබූ විට
+      // ARROW KEYS වලින් භාණ්ඩ කාඩ් තේරීම
+      if ((active === searchInp || active === document.body) && displayedQuickProducts.length > 0) {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+          e.preventDefault();
+          selectedQuickIndex = (selectedQuickIndex + 1) % displayedQuickProducts.length;
+          updateQuickCardHighlight();
+          return;
+        }
+        if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+          if (selectedQuickIndex >= 0) {
+            e.preventDefault();
+            selectedQuickIndex = (selectedQuickIndex - 1 + displayedQuickProducts.length) % displayedQuickProducts.length;
+            updateQuickCardHighlight();
+            return;
+          }
+        }
+        if (e.key === 'Escape' && selectedQuickIndex >= 0) {
+          e.preventDefault();
+          selectedQuickIndex = -1;
+          updateQuickCardHighlight();
+          return;
+        }
+      }
+
+      if (e.key !== 'Enter') return;
+
+      // 1. Search කොටුවේදී හෝ කාඩ් එකක් Select කර ඇති විට Enter එබූ විට
       if (active === searchInp || active === document.body) {
         e.preventDefault();
         const q = searchInp ? searchInp.value.trim() : '';
 
+        if (selectedQuickIndex >= 0 && displayedQuickProducts[selectedQuickIndex]) {
+          addToCart(displayedQuickProducts[selectedQuickIndex]);
+          if (searchInp) {
+            searchInp.value = '';
+            searchInp.focus();
+          }
+          renderQuickProducts(allProducts);
+          return;
+        }
+
         if (active === searchInp && q !== '') {
-          const matches = allProducts.filter(p => p.barcode.toLowerCase() === q.toLowerCase());
-          if (matches.length > 0) {
-            handleProductSelection(matches);
+          const exactMatches = allProducts.filter(p => p.barcode.toLowerCase() === q.toLowerCase());
+          if (exactMatches.length > 0) {
+            handleProductSelection(exactMatches);
             searchInp.value = '';
             renderQuickProducts(allProducts);
+          } else if (displayedQuickProducts.length === 1) {
+            addToCart(displayedQuickProducts[0]);
+            searchInp.value = '';
+            renderQuickProducts(allProducts);
+          } else if (displayedQuickProducts.length > 1) {
+            selectedQuickIndex = 0;
+            updateQuickCardHighlight();
           } else {
-            alert("⚠️ '" + q + "' කේතයට අදාළ භාණ්ඩයක් හමු නොවීය!");
+            alert("⚠️ '" + q + "' සඳහා භාණ්ඩයක් හමු නොවීය!");
             searchInp.select();
           }
         } else if (cart.length > 0) {
@@ -2387,7 +2481,6 @@
         checkout(true);
       }
     });
-      
   </script>
 </body>
 </html>
