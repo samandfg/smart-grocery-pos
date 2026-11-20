@@ -517,35 +517,49 @@
               <div id="rDues" class="stat-val" style="color:var(--danger);">Rs. 0.00</div>
             </div>
           </div>
-		  <!-- ROW 4: DETAILED BUSINESS REPORTS (EXCEL / PRINT) -->
-        <div class="panel" style="margin-top:18px; border-color: var(--accent);">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
-            <h3 style="margin:0; color:var(--accent);">📑 ව්‍යාපාරික වාර්තා (Detailed Business Reports)</h3>
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <select id="repType" onchange="onReportTypeChange()" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff; font-weight:bold;">
-                <option value="daily">📅 1. දිනෙන් දින විකුණුම් වාර්තාව (Daily Sales Breakdown)</option>
-                <option value="items">📦 2. භාණ්ඩ අනුව විකුණුම් සහ ලාභය (Item-wise Sales & Profit)</option>
-                <option value="dues">⚠️ 3. ණයගැතියන්ගේ වාර්තාව (Customer Dues Report)</option>
-                <option value="stock">🏪 4. වත්මන් තොග වටිනාකම සහ Low Stock (Stock Valuation)</option>
-              </select>
-              <div id="repDateInputs" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                <input type="date" id="repFromDate" style="padding:8px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff;">
-                <span style="color:var(--muted);">සිට</span>
-                <input type="date" id="repToDate" style="padding:8px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff;">
-              </div>
-              <button class="btn-primary" style="padding:8px 14px; font-size:0.92rem;" onclick="generateBusinessReport()">📊 Generate Report</button>
-              <button onclick="exportReportToCSV()" style="background:#059669; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">📥 Excel (CSV)</button>
-              <button onclick="printBusinessReport()" style="background:#3b82f6; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">🖨️ Print</button>
+		  <!-- ROW 4: BUTTON TO OPEN FULL-SCREEN REPORTS -->
+        <div style="margin-top:18px; text-align:right;">
+          <button class="btn-primary" style="padding:12px 22px; font-size:1rem; background:#38bdf8; color:#020617;" onclick="openReportsScreen()">
+            📑 සවිස්තරාත්මක ව්‍යාපාරික වාර්තා බලන්න (Open Business Reports) ➔
+          </button>
+        </div>
+      </div>
+	  </div>
+
+      <!-- TAB 5: FULL-SCREEN DETAILED BUSINESS REPORTS (ADMIN ONLY) -->
+      <div id="tab-reports" class="tab-content">
+        <div class="panel" style="border-color: var(--accent);">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:14px;">
+            <h2 style="margin:0; color:var(--accent);">📑 ව්‍යාපාරික වාර්තා (Detailed Business Reports)</h2>
+            <button onclick="switchTab('dash')" style="background:#334155; color:#fff; border:1px solid #475569; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.95rem;">
+              ⬅️ Back to Dashboard
+            </button>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px; background:#0f172a; padding:12px; border-radius:8px; border:1px solid var(--border);">
+            <select id="repType" onchange="onReportTypeChange()" style="padding:9px 12px; border-radius:6px; border:1px solid var(--border); background:var(--card); color:#fff; font-weight:bold;">
+              <option value="daily">📅 1. දිනෙන් දින විකුණුම් වාර්තාව (Daily Sales Breakdown)</option>
+              <option value="items">📦 2. භාණ්ඩ අනුව විකුණුම් සහ ලාභය (Item-wise Sales & Profit)</option>
+              <option value="dues">⚠️ 3. ණයගැතියන්ගේ වාර්තාව (Customer Dues Report)</option>
+              <option value="stock">🏪 4. වත්මන් තොග වටිනාකම සහ Low Stock (Stock Valuation)</option>
+            </select>
+            <div id="repDateInputs" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <input type="date" id="repFromDate" style="padding:8px; border-radius:6px; border:1px solid var(--border); background:var(--card); color:#fff;">
+              <span style="color:var(--muted);">සිට</span>
+              <input type="date" id="repToDate" style="padding:8px; border-radius:6px; border:1px solid var(--border); background:var(--card); color:#fff;">
             </div>
+            <button class="btn-primary" style="padding:9px 16px; font-size:0.95rem;" onclick="generateBusinessReport()">📊 Generate Report</button>
+            <button onclick="exportReportToCSV()" style="background:#059669; color:#fff; border:none; padding:9px 14px; border-radius:6px; cursor:pointer; font-weight:bold;">📥 Excel (CSV)</button>
+            <button onclick="printBusinessReport()" style="background:#3b82f6; color:#fff; border:none; padding:9px 14px; border-radius:6px; cursor:pointer; font-weight:bold;">🖨️ Print</button>
           </div>
 
           <div id="reportPrintArea">
-            <div id="repHeaderTitle" style="font-weight:bold; font-size:1.05rem; margin-bottom:8px; color:#fbbf24;"></div>
+            <div id="repHeaderTitle" style="font-weight:bold; font-size:1.1rem; margin-bottom:10px; color:#fbbf24;"></div>
             <div style="overflow-x:auto;">
               <table id="repDataTable">
                 <thead id="repTableHead"></thead>
                 <tbody id="repTableBody">
-                  <tr><td style="color:var(--muted); text-align:center; padding:20px;">ඉහත Report වර්ගය තෝරා 'Generate Report' ඔබන්න.</td></tr>
+                  <tr><td style="color:var(--muted); text-align:center; padding:25px;">ඉහත Report වර්ගය තෝරා 'Generate Report' ඔබන්න.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -554,7 +568,7 @@
         </div>
       </div>
 	  
-    </div>
+    
   </div>
 
   <!-- BILL DETAILS, RE-PRINT, SETTLE DUE & ADMIN EDIT/VOID MODAL -->
@@ -1185,8 +1199,16 @@
       setTimeout(() => document.body.classList.remove('print-report-mode'), 500);
     }
 
+    function openReportsScreen() {
+      if (!isCurrentUserAdmin) return;
+      switchTab('reports');
+      const dashBtn = document.getElementById('navBtn-dash');
+      if (dashBtn) dashBtn.classList.add('active');
+      generateBusinessReport();
+    }
+
     function switchTab(tabId, btn) {
-      if (tabId === 'dash' && !isCurrentUserAdmin) return;
+      if ((tabId === 'dash' || tabId === 'reports') && !isCurrentUserAdmin) return;
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-btns button').forEach(b => b.classList.remove('active'));
       document.getElementById('tab-' + tabId).classList.add('active');
