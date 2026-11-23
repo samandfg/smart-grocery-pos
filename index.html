@@ -278,6 +278,7 @@
         <button id="navBtn-pos" class="active" onclick="switchTab('pos', this)">🧾 Billing</button>
         <button id="navBtn-history" onclick="switchTab('history', this)">📜 Bill History</button>
         <button id="navBtn-stock" onclick="switchTab('stock', this)">📦 Stock / Items</button>
+		<button id="navBtn-suppliers" onclick="switchTab('suppliers', this)">🚚 Suppliers</button>
         <button id="navBtn-dash" onclick="switchTab('dash', this)">📊 Dashboard</button>
         <button class="btn-logout" onclick="handleLogout()" title="Logout">🚪 Logout</button>
       </div>
@@ -439,6 +440,10 @@
               <label>ඒකකයකට වට්ටම (Discount Rs.)</label>
               <input type="number" id="pDiscount" step="0.01" placeholder="0.00" onwheel="this.blur()">
             </div>
+            <div class="form-group">
+              <label>කල් ඉකුත් වන දිනය (Expiry Date)</label>
+              <input type="date" id="pExpiry">
+            </div>
           </div>
           <button class="btn-primary" style="margin-top:12px;" onclick="saveNewProduct()">Save Product / Add Stock</button>
         </div>
@@ -464,12 +469,87 @@
                 <th>Cost</th>
                 <th>Price</th>
                 <th>Disc</th>
+                <th>Expiry Date</th>
                 <th>Stock</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="stockTableBody"></tbody>
           </table>
+        </div>
+      </div>
+	  <!-- TAB: SUPPLIERS MANAGEMENT -->
+      <div id="tab-suppliers" class="tab-content">
+        <div class="panel" style="margin-bottom: 15px;">
+          <h3 style="margin-top:0; color:#38bdf8;">🚚 නව සැපයුම්කරුවෙකු / සමාගමක් ඇතුළත් කිරීම (Add Supplier)</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>සමාගමේ / සැපයුම්කරුගේ නම (Company / Supplier) *</label>
+              <input type="text" id="supName" placeholder="උදා: Elephant House / Maliban">
+            </div>
+            <div class="form-group">
+              <label>සේල්ස් රෙප්ගේ නම (Sales Rep Name)</label>
+              <input type="text" id="supRep" placeholder="උදා: කසුන්">
+            </div>
+            <div class="form-group">
+              <label>දුරකථන අංකය (Phone Number)</label>
+              <input type="text" id="supPhone" placeholder="උදා: 077-1234567">
+            </div>
+            <div class="form-group">
+              <label>පැමිණෙන දිනය (Visit Day)</label>
+              <select id="supVisitDay">
+                <option value="">-- දිනය තෝරන්න --</option>
+                <option value="සඳුදා (Monday)">සඳුදා (Monday)</option>
+                <option value="අඟහරුවාදා (Tuesday)">අඟහරුවාදා (Tuesday)</option>
+                <option value="බදාදා (Wednesday)">බදාදා (Wednesday)</option>
+                <option value="බ්‍රහස්පතින්දා (Thursday)">බ්‍රහස්පතින්දා (Thursday)</option>
+                <option value="සිකුරාදා (Friday)">සිකුරාදා (Friday)</option>
+                <option value="සෙනසුරාදා (Saturday)">සෙනසුරාදා (Saturday)</option>
+                <option value="ඉරිදා (Sunday)">ඉරිදා (Sunday)</option>
+                <option value="ඕනෑම දිනක (Any Day)">ඕනෑම දිනක (Any Day)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>ගෙවීම් ක්‍රමය (Payment Terms)</label>
+              <select id="supTerms">
+                <option value="Cash on Delivery">Cash on Delivery (අත්පිට මුදලට)</option>
+                <option value="7 Days Credit">7 Days Credit (දින 7 ණයට)</option>
+                <option value="14 Days Credit">14 Days Credit (දින 14 ණයට)</option>
+                <option value="30 Days Credit">30 Days Credit (දින 30 ණයට)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>සපයන ප්‍රධාන භාණ්ඩ / සටහන් (Items / Notes)</label>
+              <input type="text" id="supNotes" placeholder="උදා: යෝගට්, කිරිපිටි, අයිස්ක්‍රීම්">
+            </div>
+          </div>
+          <button class="btn-primary" style="margin-top:12px; background:#38bdf8; color:#020617;" onclick="saveNewSupplier()">💾 Save Supplier</button>
+        </div>
+
+        <div class="panel">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+            <h3 style="margin:0;">📋 සැපයුම්කරුවන්ගේ ලැයිස්තුව (Suppliers Directory)</h3>
+            <input type="text" id="supSearchInput" oninput="filterSuppliersTable()" placeholder="🔍 සමාගම / රෙප් / දිනය සොයන්න..." style="padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff; min-width:240px;">
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>සමාගම (Supplier)</th>
+                  <th>Sales Rep</th>
+                  <th>දුරකථන (Phone)</th>
+                  <th>පැමිණෙන දිනය</th>
+                  <th>ගෙවීම් ක්‍රමය</th>
+                  <th>Pending Returns (ලැබිය යුතු)</th>
+                  <th>සටහන්</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="suppliersTableBody">
+                <tr><td colspan="8" style="text-align:center; color:var(--muted); padding:20px;">Loading suppliers...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -544,6 +624,26 @@
             </div>
           </div>
 
+          <!-- PAYMENT BREAKDOWN CARDS (CASH / BANK / CREDIT / RETURNS) -->
+          <div class="dash-grid" style="margin-top:12px; margin-bottom:0; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+            <div class="stat-card" style="background:#0f172a; border-color: rgba(16, 185, 129, 0.4);">
+              <div style="color:var(--muted);">💵 අතට ලැබුණු මුදල (Cash in Hand)</div>
+              <div id="rCashInHand" class="stat-val" style="color:#10b981; font-size:1.55rem;">Rs. 0.00</div>
+            </div>
+            <div class="stat-card" style="background:#0f172a; border-color: rgba(56, 189, 248, 0.4);">
+              <div style="color:var(--muted);">💳 බැංකුවට ගිය මුදල (Bank / Card)</div>
+              <div id="rBankCard" class="stat-val" style="color:#38bdf8; font-size:1.55rem;">Rs. 0.00</div>
+            </div>
+            <div class="stat-card" style="background:#0f172a; border-color: rgba(239, 68, 68, 0.4);">
+              <div style="color:var(--muted);">⚠️ අයවිය යුතු ණය (Credit / Dues)</div>
+              <div id="rCreditDue" class="stat-val" style="color:var(--danger); font-size:1.55rem;">Rs. 0.00</div>
+            </div>
+            <div class="stat-card" style="background:#0f172a; border-color: rgba(245, 158, 11, 0.4);">
+              <div style="color:var(--muted);">↩️ සමාගම් වලින් ලැබිය යුතු (Pending Returns)</div>
+              <div id="rSupplierCredits" class="stat-val" style="color:#f59e0b; font-size:1.55rem;">Rs. 0.00</div>
+            </div>
+          </div>
+
           <!-- ROW 4: BUTTON TO OPEN FULL-SCREEN REPORTS -->
           <div style="margin-top:18px; text-align:right;">
             <button class="btn-primary" style="padding:12px 22px; font-size:1rem; background:#38bdf8; color:#020617;" onclick="openReportsScreen()">
@@ -571,6 +671,9 @@
               <option value="slow">🐢 4. හෙමින් විකිණෙන / නොවිකිණෙන භාණ්ඩ (Slow-Moving Items)</option>
               <option value="dues">⚠️ 5. ණයගැතියන්ගේ වාර්තාව (Customer Dues Report)</option>
               <option value="stock">🏪 6. වත්මන් තොග වටිනාකම සහ Low Stock (Stock Valuation)</option>
+              <option value="payments">💳 7. ගෙවීම් ක්‍රම අනුව වාර්තාව (Cash / Bank / Credit Summary)</option>
+              <option value="expiry">⏳ 8. කල් ඉකුත් වන භාණ්ඩ වාර්තාව (Expiry & Near-Expiry Report)</option>
+              <option value="returns">↩️ 9. සැපයුම්කරුවන්ට ආපසු දුන් භාණ්ඩ වාර්තාව (Supplier Returns)</option>
             </select>
             <div id="repDateInputs" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
               <input type="date" id="repFromDate" style="padding:8px; border-radius:6px; border:1px solid var(--border); background:var(--card); color:#fff;">
@@ -692,13 +795,139 @@
         <label>දැනට තියෙන තොගය (Current Stock)</label>
         <input type="number" id="editStock" step="0.01" onwheel="this.blur()">
       </div>
-      <div class="form-group" style="margin-bottom:12px;">
+      <div class="form-group" style="margin-bottom:8px;">
         <label>ඒකකයකට වට්ටම (Discount Rs.)</label>
         <input type="number" id="editDiscount" step="0.01" placeholder="0.00" onwheel="this.blur()">
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>කල් ඉකුත් වන දිනය (Expiry Date)</label>
+        <input type="date" id="editExpiry">
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
         <button onclick="closeEditModal()" style="padding:10px; background:transparent; border:1px solid var(--danger); color:var(--danger); border-radius:6px; cursor:pointer; font-weight:bold;">Cancel</button>
         <button onclick="submitEditProduct()" class="btn-primary" style="padding:10px;">Save Changes</button>
+      </div>
+    </div>
+  </div>
+  <!-- EDIT SUPPLIER MODAL -->
+  <div id="editSupplierModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 480px; border-color: #38bdf8;">
+      <h3 style="margin-top:0; color:#38bdf8;">✏️ සැපයුම්කරු සංස්කරණය (Edit Supplier)</h3>
+      <input type="hidden" id="editSupId">
+      <div class="form-group" style="margin-bottom:8px;">
+        <label>සමාගමේ නම (Company / Supplier Name) *</label>
+        <input type="text" id="editSupName">
+      </div>
+      <div class="form-group" style="margin-bottom:8px;">
+        <label>සේල්ස් රෙප්ගේ නම (Sales Rep)</label>
+        <input type="text" id="editSupRep">
+      </div>
+      <div class="form-group" style="margin-bottom:8px;">
+        <label>දුරකථන අංකය (Phone)</label>
+        <input type="text" id="editSupPhone">
+      </div>
+      <div class="form-group" style="margin-bottom:8px;">
+        <label>පැමිණෙන දිනය (Visit Day)</label>
+        <select id="editSupVisitDay">
+          <option value="">-- දිනය තෝරන්න --</option>
+          <option value="සඳුදා (Monday)">සඳුදා (Monday)</option>
+          <option value="අඟහරුවාදා (Tuesday)">අඟහරුවාදා (Tuesday)</option>
+          <option value="බදාදා (Wednesday)">බදාදා (Wednesday)</option>
+          <option value="බ්‍රහස්පතින්දා (Thursday)">බ්‍රහස්පතින්දා (Thursday)</option>
+          <option value="සිකුරාදා (Friday)">සිකුරාදා (Friday)</option>
+          <option value="සෙනසුරාදා (Saturday)">සෙනසුරාදා (Saturday)</option>
+          <option value="ඉරිදා (Sunday)">ඉරිදා (Sunday)</option>
+          <option value="ඕනෑම දිනක (Any Day)">ඕනෑම දිනක (Any Day)</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:8px;">
+        <label>ගෙවීම් ක්‍රමය (Payment Terms)</label>
+        <select id="editSupTerms">
+          <option value="Cash on Delivery">Cash on Delivery (අත්පිට මුදලට)</option>
+          <option value="7 Days Credit">7 Days Credit (දින 7 ණයට)</option>
+          <option value="14 Days Credit">14 Days Credit (දින 14 ණයට)</option>
+          <option value="30 Days Credit">30 Days Credit (දින 30 ණයට)</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>සටහන් (Notes)</label>
+        <input type="text" id="editSupNotes">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <button onclick="closeEditSupplierModal()" style="padding:10px; background:transparent; border:1px solid var(--danger); color:var(--danger); border-radius:6px; cursor:pointer; font-weight:bold;">Cancel</button>
+        <button onclick="submitEditSupplier()" class="btn-primary" style="padding:10px; background:#38bdf8; color:#020617;">Save Changes</button>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- SUPPLIER RETURN MODAL -->
+  <div id="supplierReturnModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 520px; border-color: #f59e0b;">
+      <h3 style="margin-top:0; color:#f59e0b;">↩️ සැපයුම්කරුට භාණ්ඩ ආපසු දීම (Supplier Return)</h3>
+      <input type="hidden" id="retProdId">
+      <div id="retItemSummary" style="background:#0f172a; padding:10px; border-radius:6px; margin-bottom:12px; font-size:0.9rem; border:1px solid var(--border);"></div>
+
+      <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+        <div class="form-group">
+       <label>සැපයුම්කරු / සමාගම (Supplier Name) *</label>
+       <select id="retSupplierSelect" onchange="onRetSupplierSelectChange()">
+         <option value="">-- සමාගම තෝරන්න --</option>
+       </select>
+       <input type="text" id="retSupplier" placeholder="සමාගමේ නම ටයිප් කරන්න..." style="display:none; margin-top:6px;">
+     </div>
+        <div class="form-group">
+          <label>ආපසු දෙන ප්‍රමාණය (Return Qty) *</label>
+          <input type="number" id="retQty" step="0.01" oninput="updateReturnCalc()" onwheel="this.blur()">
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>සමාගම පියවන ආකාරය (Settlement Type) *</label>
+        <select id="retSettlement" onchange="onReturnSettlementChange()">
+          <option value="Replaced">🔄 1. අලුත් භාණ්ඩ මාරු කර දුන්නා (1-to-1 Replacement)</option>
+          <option value="Credit Note">📝 2. ඊළඟ බිලෙන් අඩු කිරීමට ඇත (Credit Note / Pending)</option>
+          <option value="Cash Refund">💵 3. මුදල් ආපසු ලබා දුන්නා (Cash Refund)</option>
+        </select>
+      </div>
+
+      <!-- REPLACEMENT DETAILS BOX -->
+      <div id="retReplacementBox" style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.4); padding:10px; border-radius:8px; margin-bottom:10px;">
+        <div style="font-size:0.82rem; color:var(--accent); font-weight:bold; margin-bottom:8px;">
+          📦 අලුතින් ලැබුණු තොගයේ විස්තර (New Stock Batch):
+        </div>
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:8px;">
+          <div class="form-group">
+            <label>ලැබුණු අලුත් ප්‍රමාණය (New Qty)</label>
+            <input type="number" id="retNewQty" step="0.01" onwheel="this.blur()">
+          </div>
+          <div class="form-group">
+            <label>අලුත් කල් ඉකුත් වන දිනය (New Expiry)</label>
+            <input type="date" id="retNewExpiry">
+          </div>
+          <div class="form-group">
+            <label>ගැනුම් මිල (Cost Price Rs.)</label>
+            <input type="number" id="retNewCost" step="0.01" onwheel="this.blur()">
+          </div>
+          <div class="form-group">
+            <label>විකුණුම් මිල (Selling Price Rs.)</label>
+            <input type="number" id="retNewPrice" step="0.01" onwheel="this.blur()">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>අමතර සටහන් (Notes - අත්‍යවශ්‍ය නොවේ)</label>
+        <input type="text" id="retNotes" placeholder="උදා: මිල Rs.65 ට වැඩි වූ නිසා Rs.50 ක් ගෙව්වා...">
+      </div>
+
+      <div id="retTotalValueDisplay" style="text-align:right; font-weight:bold; color:#fbbf24; margin-bottom:12px; font-size:1rem;">
+        මුළු Return වටිනාකම (Cost Value): Rs. 0.00
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <button onclick="closeSupplierReturnModal()" style="padding:10px; background:transparent; border:1px solid var(--danger); color:var(--danger); border-radius:6px; cursor:pointer; font-weight:bold;">Cancel</button>
+        <button id="btnSubmitReturn" onclick="submitSupplierReturn()" class="btn-primary" style="padding:10px; background:#f59e0b; color:#000;">✅ Confirm Return</button>
       </div>
     </div>
   </div>
@@ -726,7 +955,7 @@
     <table class="r-table" style="font-size:9.5px; margin-bottom:3px; width:100%; table-layout:fixed;">
       <tr>
         <td style="width:45%; white-space:nowrap; padding:1px 0 !important;">අයකැමි නම : <span id="rCashier" class="r-bold">CASHIER</span></td>
-        <td class="r-right" style="width:55%; white-space:nowrap; padding:1px 0 !important;">වේලාව : <span id="rTime"></span></td>
+        <td class="r-right" style="width:55%; white-space:nowrap; padding:1px 0 !important;">ආරම්භය : <span id="rTime"></span></td>
       </tr>
       <tr>
         <td style="width:45%; padding:1px 0 !important;"><span id="rCustRow" style="display:none;">පාරිභෝගිකයා : <span id="rCust" class="r-bold"></span></span></td>
@@ -801,7 +1030,7 @@
       </tr>
       <tr>
         <td style="padding:2px 0 !important;">දිනය : <span id="rDate"></span></td>
-        <td class="r-right" style="padding:2px 0 !important;">වේලාව : <span id="rEndTime"></span></td>
+        <td class="r-right" style="padding:2px 0 !important;">අවසානය : <span id="rEndTime"></span></td>
       </tr>
     </table>
 
@@ -822,10 +1051,13 @@
     let isCurrentUserAdmin = false;
 
     let allProducts = [];
+	let allSuppliers = [];
+ let pendingReturnsBySupplier = {};
     let allSalesHistory = [];
     let selectedBillForPrint = null;
     let cart = [];
     let pendingBatches = [];
+    let billStartTime = null;
 
     // ==========================================
     // AUTHENTICATION & SESSION CHECK
@@ -906,6 +1138,24 @@
     }
 
     // ==========================================
+    // EXPIRY DATE HELPER FUNCTION
+    // ==========================================
+    function getExpiryStatus(expDateStr) {
+      if (!expDateStr) return { status: 'none', days: null, label: '' };
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const exp = new Date(expDateStr + "T00:00:00");
+      const diffDays = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
+        return { status: 'expired', days: diffDays, label: `❌ EXPIRED (${expDateStr})` };
+      } else if (diffDays <= 30) {
+        return { status: 'soon', days: diffDays, label: `⚠️ Exp: ${expDateStr} (${diffDays}d)` };
+      }
+      return { status: 'ok', days: diffDays, label: `📅 Exp: ${expDateStr}` };
+    }
+
+    // ==========================================
     // LOAD DATA & DASHBOARD REPORTS
     // ==========================================
     async function loadData() {
@@ -928,11 +1178,13 @@
         price: Number(p.price) || 0,
         stock: Number(p.stock) || 0,
         reorder: Number(p.reorder) || 5,
-        discount: Number(p.discount) || 0
+        discount: Number(p.discount) || 0,
+        expiry_date: p.expiry_date || null
       }));
 
       renderQuickProducts(allProducts);
       renderStockTable(allProducts);
+	  await loadSuppliersData();
 
       if (!isCurrentUserAdmin) return;
 
@@ -997,7 +1249,7 @@
 
       const { data, error } = await db
         .from('sales')
-        .select('net_total, total_profit, due_amount, payment_method')
+        .select('net_total, total_profit, paid_amount, due_amount, payment_method')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
@@ -1007,18 +1259,57 @@
       }
 
       let rSales = 0, rProfit = 0, rBills = 0, rDues = 0;
+      let rCashTotal = 0, rBankTotal = 0;
+
       (data || []).forEach(s => {
-        if (s.payment_method && s.payment_method.startsWith('VOIDED')) return;
-        rSales += Number(s.net_total) || 0;
-        rProfit += Number(s.total_profit) || 0;
-        rDues += Number(s.due_amount) || 0;
+        const pm = s.payment_method || 'Cash';
+        if (pm.startsWith('VOIDED')) return;
+
+        const net = Number(s.net_total) || 0;
+        const prof = Number(s.total_profit) || 0;
+        const due = Number(s.due_amount) || 0;
+        const paid = (s.paid_amount !== null && s.paid_amount !== undefined) ? Number(s.paid_amount) : net;
+
+        rSales += net;
+        rProfit += prof;
+        rDues += due;
         rBills++;
+
+        // Cash සහ Bank (Card) මුදල් නිවැරදිව වෙන් කිරීම
+        if (pm.startsWith('Cash + Card')) {
+          const match = pm.match(/Cash:\s*([\d.]+)\s*\|\s*Card:\s*([\d.]+)/);
+          if (match) {
+            rCashTotal += Number(match[1]) || 0;
+            rBankTotal += Number(match[2]) || 0;
+          } else {
+            rBankTotal += paid;
+          }
+        } else if (pm === 'Card') {
+          rBankTotal += paid;
+        } else {
+          // Cash, Cash (Settled), Partial Credit හි අතට දුන් කොටස
+          rCashTotal += Math.max(0, net - due);
+        }
       });
 
       document.getElementById('rSales').innerText = "Rs. " + rSales.toFixed(2);
       document.getElementById('rProfit').innerText = "Rs. " + rProfit.toFixed(2);
       document.getElementById('rBills').innerText = rBills;
       document.getElementById('rDues').innerText = "Rs. " + rDues.toFixed(2);
+
+      document.getElementById('rCashInHand').innerText = "Rs. " + rCashTotal.toFixed(2);
+      document.getElementById('rBankCard').innerText = "Rs. " + rBankTotal.toFixed(2);
+      document.getElementById('rCreditDue').innerText = "Rs. " + rDues.toFixed(2);
+
+      // සමාගම් වලින් ලැබිය යුතු Pending Credit Notes එකතුව
+      const { data: pendingRets } = await db
+        .from('supplier_returns')
+        .select('total_cost_value')
+        .eq('status', 'Pending');
+
+      const totalPendingCredits = (pendingRets || []).reduce((sum, r) => sum + (Number(r.total_cost_value) || 0), 0);
+      const supCredEl = document.getElementById('rSupplierCredits');
+      if (supCredEl) supCredEl.innerText = "Rs. " + totalPendingCredits.toFixed(2);
     }
 
     // ==========================================
@@ -1030,7 +1321,7 @@
     function onReportTypeChange() {
       const type = document.getElementById('repType').value;
       const dateDiv = document.getElementById('repDateInputs');
-      dateDiv.style.display = (type === 'dues' || type === 'stock') ? 'none' : 'flex';
+      dateDiv.style.display = (type === 'dues' || type === 'stock' || type === 'expiry') ? 'none' : 'flex';
     }
 
     async function generateBusinessReport() {
@@ -1379,6 +1670,184 @@
           </tr>`;
         currentReportCSVRows.push(["", "TOTAL INVENTORY VALUE", "", "", totCostVal.toFixed(2), totSellVal.toFixed(2)]);
       }
+
+      // 7. PAYMENT METHOD SUMMARY REPORT (CASH / BANK CARD / CREDIT)
+      else if (type === 'payments') {
+        titleEl.innerText = `💳 ගෙවීම් ක්‍රම අනුව වාර්තාව - Cash / Bank / Credit (${fromVal} සිට ${toVal} දක්වා)`;
+        currentReportFilename = `Payment_Summary_${fromVal}_to_${toVal}.csv`;
+
+        const { data, error } = await db
+          .from('sales')
+          .select('created_at, net_total, paid_amount, due_amount, payment_method')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString())
+          .order('created_at', { ascending: true });
+
+        if (error) { alert("Error: " + error.message); return; }
+
+        const payMap = {};
+        (data || []).forEach(s => {
+          const pm = s.payment_method || 'Cash';
+          if (pm.startsWith('VOIDED')) return;
+
+          const dKey = new Date(s.created_at).toLocaleDateString('en-CA');
+          if (!payMap[dKey]) payMap[dKey] = { bills: 0, totalSales: 0, cash: 0, bank: 0, due: 0 };
+
+          const net = Number(s.net_total) || 0;
+          const due = Number(s.due_amount) || 0;
+          const paid = (s.paid_amount !== null && s.paid_amount !== undefined) ? Number(s.paid_amount) : net;
+
+          payMap[dKey].bills++;
+          payMap[dKey].totalSales += net;
+          payMap[dKey].due += due;
+
+          if (pm.startsWith('Cash + Card')) {
+            const match = pm.match(/Cash:\s*([\d.]+)\s*\|\s*Card:\s*([\d.]+)/);
+            if (match) {
+              payMap[dKey].cash += Number(match[1]) || 0;
+              payMap[dKey].bank += Number(match[2]) || 0;
+            } else {
+              payMap[dKey].bank += paid;
+            }
+          } else if (pm === 'Card') {
+            payMap[dKey].bank += paid;
+          } else {
+            payMap[dKey].cash += Math.max(0, net - due);
+          }
+        });
+
+        thead.innerHTML = `<tr><th>දිනය (Date)</th><th>බිල් ගණන</th><th>💵 Cash (අතට ලැබුණු)</th><th>💳 Bank / Card (බැංකුවට ගිය)</th><th>⚠️ Credit (ණය මුදල)</th><th>මුළු විකුණුම් (Total Sales)</th></tr>`;
+        currentReportCSVRows.push(["Date", "Bills", "Cash in Hand", "Bank / Card", "Credit / Due", "Total Sales"]);
+
+        const dates = Object.keys(payMap);
+        if (dates.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted);">මෙම කාලය තුළ දත්ත නොමැත</td></tr>';
+          return;
+        }
+
+        let sumBills = 0, sumCash = 0, sumBank = 0, sumDue = 0, sumAll = 0;
+        tbody.innerHTML = dates.map(d => {
+          const r = payMap[d];
+          sumBills += r.bills; sumCash += r.cash; sumBank += r.bank; sumDue += r.due; sumAll += r.totalSales;
+          currentReportCSVRows.push([d, r.bills, r.cash.toFixed(2), r.bank.toFixed(2), r.due.toFixed(2), r.totalSales.toFixed(2)]);
+          return `<tr>
+            <td style="font-weight:bold;">${d}</td>
+            <td>${r.bills}</td>
+            <td style="color:#10b981; font-weight:bold;">Rs. ${r.cash.toFixed(2)}</td>
+            <td style="color:#38bdf8; font-weight:bold;">Rs. ${r.bank.toFixed(2)}</td>
+            <td style="color:${r.due > 0 ? 'var(--danger)' : 'var(--muted)'}; font-weight:bold;">Rs. ${r.due.toFixed(2)}</td>
+            <td style="font-weight:bold;">Rs. ${r.totalSales.toFixed(2)}</td>
+          </tr>`;
+        }).join('') + `
+          <tr style="background:#0f172a; font-weight:bold; border-top:2px solid var(--accent);">
+            <td>TOTAL (මුළු එකතුව)</td>
+            <td>${sumBills}</td>
+            <td style="color:#10b981; font-size:1.05rem;">Rs. ${sumCash.toFixed(2)}</td>
+            <td style="color:#38bdf8; font-size:1.05rem;">Rs. ${sumBank.toFixed(2)}</td>
+            <td style="color:var(--danger); font-size:1.05rem;">Rs. ${sumDue.toFixed(2)}</td>
+            <td style="color:#fbbf24; font-size:1.05rem;">Rs. ${sumAll.toFixed(2)}</td>
+          </tr>`;
+        currentReportCSVRows.push(["TOTAL", sumBills, sumCash.toFixed(2), sumBank.toFixed(2), sumDue.toFixed(2), sumAll.toFixed(2)]);
+      }
+
+      // 8. EXPIRY & NEAR-EXPIRY REPORT
+      else if (type === 'expiry') {
+        titleEl.innerText = `⏳ කල් ඉකුත් වූ සහ ඉදිරි දින 30 ඇතුළත කල් ඉකුත් වන භාණ්ඩ (${todayStr})`;
+        currentReportFilename = `Expiry_Report_${todayStr}.csv`;
+
+        thead.innerHTML = `<tr><th>Code</th><th>භාණ්ඩය (Item)</th><th>Expiry Date</th><th>තත්ත්වය (Status)</th><th>Stock</th><th>තොග වටිනාකම (Cost Val)</th></tr>`;
+        currentReportCSVRows.push(["Code", "Item Name", "Expiry Date", "Status", "Stock Qty", "Cost Value"]);
+
+        const expItems = allProducts
+          .filter(p => p.stock > 0 && p.expiry_date)
+          .map(p => ({ ...p, expInfo: getExpiryStatus(p.expiry_date) }))
+          .filter(p => p.expInfo.status === 'expired' || p.expInfo.status === 'soon')
+          .sort((a, b) => a.expInfo.days - b.expInfo.days);
+
+        if (expItems.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--accent); padding:20px;">🎉 දැනට කල් ඉකුත් වූ හෝ ඉදිරි දින 30 ඇතුළත කල් ඉකුත් වන භාණ්ඩ කිසිවක් නොමැත!</td></tr>';
+          return;
+        }
+
+        let totLossRisk = 0;
+        tbody.innerHTML = expItems.map(p => {
+          const cVal = p.stock * p.cost;
+          totLossRisk += cVal;
+          const isExp = p.expInfo.status === 'expired';
+          const statusText = isExp
+            ? `❌ කල් ඉකුත් වී දින ${Math.abs(p.expInfo.days)} කි`
+            : `⚠️ තව දින ${p.expInfo.days} කින් කල් ඉකුත් වේ`;
+
+          currentReportCSVRows.push([p.barcode, p.name, p.expiry_date, statusText, `${p.stock} ${p.unit}`, cVal.toFixed(2)]);
+          return `<tr style="background:${isExp ? 'rgba(239,68,68,0.14)' : 'rgba(245,158,11,0.08)'};">
+            <td>${p.barcode}</td>
+            <td style="font-weight:bold;">${p.name}</td>
+            <td style="font-weight:bold; color:${isExp ? 'var(--danger)' : '#fbbf24'};">${p.expiry_date}</td>
+            <td style="font-weight:bold; color:${isExp ? 'var(--danger)' : '#fbbf24'};">${statusText}</td>
+            <td>${p.stock} ${p.unit}</td>
+            <td style="font-weight:bold;">Rs. ${cVal.toFixed(2)}</td>
+          </tr>`;
+        }).join('') + `
+          <tr style="background:#0f172a; font-weight:bold; border-top:2px solid var(--danger);">
+            <td colspan="5">TOTAL AT-RISK INVENTORY VALUE (මුළු අවදානම් තොග වටිනාකම)</td>
+            <td style="color:var(--danger); font-size:1.05rem;">Rs. ${totLossRisk.toFixed(2)}</td>
+          </tr>`;
+        currentReportCSVRows.push(["", "", "", "TOTAL AT-RISK VALUE", "", totLossRisk.toFixed(2)]);
+      }
+
+      // 9. SUPPLIER RETURNS & CREDIT NOTES REPORT
+      else if (type === 'returns') {
+        titleEl.innerText = `↩️ සැපයුම්කරුවන්ට ආපසු දුන් භාණ්ඩ වාර්තාව (${fromVal} සිට ${toVal} දක්වා)`;
+        currentReportFilename = `Supplier_Returns_${fromVal}_to_${toVal}.csv`;
+
+        const { data, error } = await db
+          .from('supplier_returns')
+          .select('*')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString())
+          .order('created_at', { ascending: false });
+
+        if (error) { alert("Error: " + error.message); return; }
+
+        thead.innerHTML = `<tr><th>දිනය (Date)</th><th>Return No</th><th>සමාගම (Supplier)</th><th>භාණ්ඩය (Item)</th><th>Qty</th><th>වටිනාකම (Cost Val)</th><th>පියවූ ආකාරය / Status</th></tr>`;
+        currentReportCSVRows.push(["Date", "Return No", "Supplier", "Item Name", "Return Qty", "Total Cost Value", "Settlement", "Status"]);
+
+        if (!data || data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--muted);">මෙම කාලය තුළ Return වාර්තා නොමැත</td></tr>';
+          return;
+        }
+
+        let totRetVal = 0, totPendingVal = 0;
+        tbody.innerHTML = data.map(r => {
+          const dt = new Date(r.created_at).toLocaleDateString('en-CA');
+          const val = Number(r.total_cost_value) || 0;
+          totRetVal += val;
+          const isPending = r.status === 'Pending';
+          if (isPending) totPendingVal += val;
+
+          currentReportCSVRows.push([dt, r.return_no, r.supplier_name, r.item_name, r.return_qty, val.toFixed(2), r.settlement_type, r.status]);
+          return `<tr style="${isPending ? 'background:rgba(245,158,11,0.1);' : ''}">
+            <td>${dt}</td>
+            <td style="font-weight:bold; color:#f59e0b;">${r.return_no}</td>
+            <td style="font-weight:bold;">${r.supplier_name}</td>
+            <td>${r.item_name} ${r.expiry_date ? `<br><small style="color:var(--muted);">Exp: ${r.expiry_date}</small>` : ''}</td>
+            <td>${r.return_qty}</td>
+            <td style="font-weight:bold;">Rs. ${val.toFixed(2)}</td>
+            <td>
+              <span style="font-weight:bold; color:${isPending ? '#fbbf24' : 'var(--accent)'};">
+                ${r.settlement_type} (${r.status})
+              </span>
+              ${r.notes ? `<br><small style="color:var(--muted);">${r.notes}</small>` : ''}
+              ${isPending ? `<br><button onclick="settleSupplierCreditNote(${r.id}, '${r.supplier_name.replace(/'/g, "\\'")}', ${val})" style="margin-top:4px; background:var(--accent); color:#000; border:none; border-radius:4px; padding:3px 8px; cursor:pointer; font-weight:bold; font-size:0.78rem;">✅ Settle Credit</button>` : ''}
+            </td>
+          </tr>`;
+        }).join('') + `
+          <tr style="background:#0f172a; font-weight:bold; border-top:2px solid #f59e0b;">
+            <td colspan="5">TOTAL RETURNS (මුළු Return වටිනාකම) | Pending: Rs. ${totPendingVal.toFixed(2)}</td>
+            <td colspan="2" style="color:#fbbf24; font-size:1.05rem;">Rs. ${totRetVal.toFixed(2)}</td>
+          </tr>`;
+        currentReportCSVRows.push(["", "", "", "TOTAL RETURNS", "", totRetVal.toFixed(2), "Pending: " + totPendingVal.toFixed(2), ""]);
+      }
     }
 
     function exportReportToCSV() {
@@ -1443,6 +1912,7 @@
       if (tabId === 'pos') document.getElementById('searchInput').focus();
       if (tabId === 'history') loadBillHistory();
       if (tabId === 'stock') document.getElementById('pCode').focus();
+	  if (tabId === 'suppliers') { loadSuppliersData(); document.getElementById('supName').focus(); }
     }
 
     // ==========================================
@@ -1855,11 +2325,19 @@
       }
       box.innerHTML = visibleList.map(p => {
         const isLow = p.stock <= 5;
+        const expInfo = getExpiryStatus(p.expiry_date);
+        const isExpired = expInfo.status === 'expired';
+        const isSoon = expInfo.status === 'soon';
+        let cardBorder = '';
+        if (isExpired) cardBorder = 'border: 2px solid #ef4444; background: rgba(239, 68, 68, 0.16);';
+        else if (isSoon) cardBorder = 'border: 1px solid #f59e0b; background: rgba(245, 158, 11, 0.08);';
+
         return `
-          <div class="prod-card ${isLow ? 'low-stock-card' : ''}" onclick='addToCart(${JSON.stringify(p)})'>
+          <div class="prod-card ${isLow ? 'low-stock-card' : ''}" style="${cardBorder}" onclick='addToCart(${JSON.stringify(p)})'>
             <div class="prod-name">${p.name}</div>
             <div class="prod-price">Rs. ${p.price.toFixed(2)} / ${p.unit}</div>
             ${(p.discount || 0) > 0 ? `<div style="font-size:0.75rem; color:#38bdf8; font-weight:bold;">🏷️ Disc: Rs. ${p.discount.toFixed(2)}</div>` : ''}
+            ${expInfo.status !== 'none' ? `<div style="font-size:0.74rem; font-weight:bold; margin-top:2px; color:${isExpired ? '#fca5a5' : (isSoon ? '#fbbf24' : 'var(--muted)')};">${expInfo.label}</div>` : ''}
             <div class="prod-stock ${isLow ? 'low' : ''}">
               Stock: ${p.stock} ${p.unit} ${isLow ? '⚠️' : ''}
             </div>
@@ -1879,14 +2357,22 @@
       pendingBatches = batches;
       document.getElementById('batchModalTitle').innerText = batches[0].name;
       const listDiv = document.getElementById('batchOptionsList');
-      listDiv.innerHTML = batches.map((b, i) => `
+      listDiv.innerHTML = batches.map((b, i) => {
+        const expInfo = getExpiryStatus(b.expiry_date);
+        const expTag = expInfo.status !== 'none'
+          ? `<br><small style="color:${expInfo.status === 'expired' ? '#fca5a5' : (expInfo.status === 'soon' ? '#fbbf24' : '#94a3b8')};">${expInfo.label}</small>`
+          : '';
+        return `
         <button class="batch-btn" onclick="selectBatch(${i})">
-          <span><strong>[${i + 1}] Rs. ${b.price.toFixed(2)}</strong> / ${b.unit} ${(b.discount || 0) > 0 ? `<small style="color:#38bdf8;">(-Rs.${b.discount})</small>` : ''}</span>
+          <span>
+            <strong>[${i + 1}] Rs. ${b.price.toFixed(2)}</strong> / ${b.unit} ${(b.discount || 0) > 0 ? `<small style="color:#38bdf8;">(-Rs.${b.discount})</small>` : ''}
+            ${expTag}
+          </span>
           <span style="color:${b.stock <= 5 ? 'var(--danger)' : 'var(--accent)'}; font-size:0.85rem;">
             Stock: ${b.stock}
           </span>
         </button>
-      `).join('');
+      `}).join('');
       document.getElementById('batchModal').style.display = 'flex';
     }
 
@@ -1915,6 +2401,13 @@
 
     function addToCart(prod) {
       const existing = cart.find(c => c.id === prod.id);
+      const expInfo = getExpiryStatus(prod.expiry_date);
+      if (expInfo.status === 'expired') {
+        const allowExp = confirm(
+          "🚨 බරපතල අවවාදයයි: '" + prod.name + "' කල් ඉකුත් වී ඇත! (Expired: " + prod.expiry_date + ")\n\nමෙම භාණ්ඩය විකිණීමට නුසුදුසුය. එසේ වුවද බිල් එකට එකතු කරන්නද?"
+        );
+        if (!allowExp) return;
+      }
       const nextQty = existing ? existing.qty + 1 : 1;
 
       if (prod.stock <= 0 || nextQty > prod.stock) {
@@ -1922,6 +2415,9 @@
           "⚠️ අවවාදයයි: '" + prod.name + " (Rs. " + prod.price + ")' තොගය ප්‍රමාණවත් නැත (දැනට Stock: " + prod.stock + " " + prod.unit + ").\n\nඑසේ වුවද බිල් එකට එකතු කරන්නද?"
         );
         if (!proceed) return;
+      }
+      if (cart.length === 0) {
+        billStartTime = new Date().toLocaleTimeString('en-GB', { hour12: false });
       }
 
       if (existing) {
@@ -1971,6 +2467,7 @@
 
     function clearCart() {
       cart = [];
+      billStartTime = null;
       document.getElementById('inpDiscount').value = '0.00';
       document.getElementById('inpCash').value = '';
       document.getElementById('inpCustNote').value = '';
@@ -2209,7 +2706,7 @@
       document.getElementById('rCashier').innerText = isCurrentUserAdmin ? "ADMIN" : "CASHIER";
       document.getElementById('rInvNo').innerText = invNo;
       document.getElementById('rDate').innerText = dateOnly;
-      document.getElementById('rTime').innerText = timeOnly;
+      document.getElementById('rTime').innerText = billStartTime || timeOnly;
       document.getElementById('rEndTime').innerText = timeOnly;
 
       if (customerNote) {
@@ -2363,6 +2860,7 @@
       document.getElementById('editPrice').value = p.price;
       document.getElementById('editStock').value = p.stock;
       document.getElementById('editDiscount').value = p.discount || 0;
+      document.getElementById('editExpiry').value = p.expiry_date || '';
       document.getElementById('editModal').style.display = 'flex';
     }
 
@@ -2380,7 +2878,8 @@
         cost: Number(document.getElementById('editCost').value),
         price: Number(document.getElementById('editPrice').value),
         stock: Number(document.getElementById('editStock').value),
-        discount: Number(document.getElementById('editDiscount').value) || 0
+        discount: Number(document.getElementById('editDiscount').value) || 0,
+        expiry_date: document.getElementById('editExpiry').value || null
       };
       if (!updated.barcode || !updated.name || updated.price <= 0) {
         alert("⚠️ කරුණාකර නිවැරදි විස්තර ඇතුළත් කරන්න!");
@@ -2400,7 +2899,10 @@
       const overrideBtn = document.getElementById('btnStockOverride');
       if (overrideBtn) overrideBtn.style.display = isCurrentUserAdmin ? 'none' : 'inline-block';
 
-      document.getElementById('stockTableBody').innerHTML = list.map(p => `
+      document.getElementById('stockTableBody').innerHTML = list.map(p => {
+        const expInfo = getExpiryStatus(p.expiry_date);
+        const expColor = expInfo.status === 'expired' ? 'var(--danger)' : (expInfo.status === 'soon' ? '#fbbf24' : 'var(--muted)');
+        return `
         <tr>
           <td>${p.barcode}</td>
           <td>${p.name}</td>
@@ -2408,17 +2910,23 @@
           <td>${p.cost.toFixed(2)}</td>
           <td>${p.price.toFixed(2)}</td>
           <td style="color:#38bdf8;">${(p.discount || 0) > 0 ? 'Rs. ' + p.discount.toFixed(2) : '-'}</td>
+          <td style="color:${expColor}; font-weight:${expInfo.status === 'expired' || expInfo.status === 'soon' ? 'bold' : 'normal'};">
+            ${p.expiry_date ? p.expiry_date : '-'} ${expInfo.status === 'expired' ? '❌' : (expInfo.status === 'soon' ? '⚠️' : '')}
+          </td>
           <td style="color:${p.stock <= 5 ? 'var(--danger)' : 'var(--accent)'}; font-weight:bold;">
             ${p.stock}
           </td>
           <td style="text-align:right; white-space:nowrap;">
+            ${(canEdit && p.stock > 0) ? `
+              <button onclick='openSupplierReturnModal(${JSON.stringify(p)})' style="background:#f59e0b; color:#000; border:none; border-radius:4px; padding:4px 8px; cursor:pointer; margin-right:4px; font-weight:bold;" title="සැපයුම්කරුට ආපසු දෙන්න">↩️ Return</button>
+            ` : ''}
             ${canEdit ? `
               <button onclick='openEditModal(${JSON.stringify(p)})' style="background:#3b82f6; color:#fff; border:none; border-radius:4px; padding:4px 8px; cursor:pointer; margin-right:4px;">✏️ Edit</button>
               <button class="btn-del" onclick="confirmDeleteProduct(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${p.price})">🗑️ Delete</button>
             ` : ''}
           </td>
         </tr>
-      `).join('');
+      `}).join('');
     }
 
     async function saveNewProduct() {
@@ -2429,6 +2937,7 @@
       const priceVal = document.getElementById('pPrice').value.trim();
       const stockVal = document.getElementById('pStock').value.trim();
       const discVal = document.getElementById('pDiscount').value.trim();
+      const expiryVal = document.getElementById('pExpiry').value || null;
 
       if (!code) { alert("⚠️ කරුණාකර Barcode / Short Code ඇතුළත් කරන්න!"); document.getElementById('pCode').focus(); return; }
       if (!name) { alert("⚠️ කරුණාකර භාණ්ඩයේ නම ඇතුළත් කරන්න!"); document.getElementById('pName').focus(); return; }
@@ -2441,7 +2950,7 @@
       const addQty = Number(stockVal);
       const newDiscount = Number(discVal) || 0;
 
-      const existingBatch = allProducts.find(p => p.barcode === code && p.price === newPrice);
+      const existingBatch = allProducts.find(p => p.barcode === code && p.price === newPrice && (p.expiry_date || null) === expiryVal);
 
       if (existingBatch) {
         const updatedStock = Number((existingBatch.stock + addQty).toFixed(3));
@@ -2453,7 +2962,7 @@
         alert("පවතින මිල (Rs. " + newPrice + ") යටතේ තොගයට එකතු කරන ලදී!");
       } else {
         const { error } = await db.from('products').insert([{
-          barcode: code, name: name, unit: unit, cost: newCost, price: newPrice, stock: addQty, discount: newDiscount
+          barcode: code, name: name, unit: unit, cost: newCost, price: newPrice, stock: addQty, discount: newDiscount, expiry_date: expiryVal
         }]);
         if (error) { alert("Error: " + error.message); return; }
         alert("නව මිල කාණ්ඩයක් (Batch - Rs. " + newPrice + ") ලෙස ඇතුළත් කරන ලදී!");
@@ -2465,11 +2974,12 @@
       document.getElementById('pPrice').value = '';
       document.getElementById('pStock').value = '';
       document.getElementById('pDiscount').value = '';
+      document.getElementById('pExpiry').value = '';
       document.getElementById('pCode').focus();
       await loadData();
     }
 
-    const stockFieldOrder = ['pCode', 'pName', 'pUnit', 'pCost', 'pPrice', 'pStock', 'pDiscount'];
+    const stockFieldOrder = ['pCode', 'pName', 'pUnit', 'pCost', 'pPrice', 'pStock', 'pDiscount', 'pExpiry'];
     function checkExistingBarcode() {
       const code = document.getElementById('pCode').value.trim();
       if (!code) return false;
@@ -2519,7 +3029,8 @@
       if (document.getElementById('batchModal').style.display === 'flex' ||
           document.getElementById('adminPinModal').style.display === 'flex' ||
           document.getElementById('billDetailModal').style.display === 'flex' ||
-          document.getElementById('editModal').style.display === 'flex') {
+          document.getElementById('editModal').style.display === 'flex' ||
+          document.getElementById('supplierReturnModal').style.display === 'flex') {
         return;
       }
 
@@ -2530,21 +3041,44 @@
       const noteInp = document.getElementById('inpCustNote');
       const discInp = document.getElementById('inpDiscount');
 
-      // ARROW KEYS වලින් භාණ්ඩ කාඩ් තේරීම
+      // ARROW KEYS වලින් 2D Grid ආකාරයට (වම/දකුණ/උඩ/පහළ) භාණ්ඩ කාඩ් තේරීම
       if ((active === searchInp || active === document.body) && displayedQuickProducts.length > 0) {
-        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        const isArrow = ['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft'].includes(e.key);
+        if (isArrow) {
           e.preventDefault();
-          selectedQuickIndex = (selectedQuickIndex + 1) % displayedQuickProducts.length;
+          const cards = document.querySelectorAll('#quickProducts .prod-card');
+          
+          // පළමු පේළියේ (Row) කාඩ් කීයක් තියෙනවාදැයි ස්වයංක්‍රීයව ගණනය කිරීම
+          let cols = 1;
+          if (cards.length > 1) {
+            const firstTop = cards[0].offsetTop;
+            while (cols < cards.length && cards[cols].offsetTop === firstTop) {
+              cols++;
+            }
+          }
+
+          if (selectedQuickIndex < 0) {
+            selectedQuickIndex = 0;
+          } else if (e.key === 'ArrowRight') {
+            if (selectedQuickIndex + 1 < displayedQuickProducts.length) {
+              selectedQuickIndex += 1;
+            }
+          } else if (e.key === 'ArrowLeft') {
+            if (selectedQuickIndex - 1 >= 0) {
+              selectedQuickIndex -= 1;
+            }
+          } else if (e.key === 'ArrowDown') {
+            if (selectedQuickIndex + cols < displayedQuickProducts.length) {
+              selectedQuickIndex += cols;
+            }
+          } else if (e.key === 'ArrowUp') {
+            if (selectedQuickIndex - cols >= 0) {
+              selectedQuickIndex -= cols;
+            }
+          }
+
           updateQuickCardHighlight();
           return;
-        }
-        if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
-          if (selectedQuickIndex >= 0) {
-            e.preventDefault();
-            selectedQuickIndex = (selectedQuickIndex - 1 + displayedQuickProducts.length) % displayedQuickProducts.length;
-            updateQuickCardHighlight();
-            return;
-          }
         }
         if (e.key === 'Escape' && selectedQuickIndex >= 0) {
           e.preventDefault();
@@ -2611,6 +3145,367 @@
         checkout(true);
       }
     });
+
+    // ==========================================
+    // SUPPLIER RETURN MANAGEMENT FUNCTIONS
+    // ==========================================
+    let currentReturnProduct = null;
+
+    function openSupplierReturnModal(prod) {
+      if (!isCurrentUserAdmin && !isStockOverrideUnlocked) return;
+      currentReturnProduct = prod;
+      document.getElementById('retProdId').value = prod.id;
+      document.getElementById('retItemSummary').innerHTML = `
+        <strong>${prod.name}</strong> (Code: ${prod.barcode})<br>
+        දැනට Stock: <span style="color:var(--accent); font-weight:bold;">${prod.stock} ${prod.unit}</span> | 
+        ගැනුම් මිල (Cost): <strong>Rs. ${prod.cost.toFixed(2)}</strong>
+        ${prod.expiry_date ? ` | Expiry: <span style="color:#fbbf24;">${prod.expiry_date}</span>` : ''}
+      `;
+
+      const selEl = document.getElementById('retSupplierSelect');
+   selEl.innerHTML = '<option value="">-- සමාගම තෝරන්න --</option>' +
+     allSuppliers.map(s => `<option value="${s.supplier_name}">${s.supplier_name}${s.rep_name ? ' (' + s.rep_name + ')' : ''}</option>`).join('') +
+     '<option value="__OTHER__">➕ වෙනත් සමාගමක් ටයිප් කරන්න...</option>';
+   selEl.value = '';
+   const customInp = document.getElementById('retSupplier');
+   customInp.value = '';
+   customInp.style.display = 'none';
+      document.getElementById('retQty').value = prod.stock;
+      document.getElementById('retSettlement').value = 'Replaced';
+      document.getElementById('retNewQty').value = prod.stock;
+      document.getElementById('retNewExpiry').value = '';
+      document.getElementById('retNewCost').value = prod.cost;
+      document.getElementById('retNewPrice').value = prod.price;
+      document.getElementById('retNotes').value = '';
+
+      onReturnSettlementChange();
+      updateReturnCalc();
+      document.getElementById('supplierReturnModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('retSupplierSelect').focus(), 50);
+    }
+
+    function closeSupplierReturnModal() {
+      document.getElementById('supplierReturnModal').style.display = 'none';
+      currentReturnProduct = null;
+    }
+
+    function onReturnSettlementChange() {
+      const type = document.getElementById('retSettlement').value;
+      document.getElementById('retReplacementBox').style.display = (type === 'Replaced') ? 'block' : 'none';
+    }
+
+    function updateReturnCalc() {
+      if (!currentReturnProduct) return;
+      const qty = parseFloat(document.getElementById('retQty').value) || 0;
+      const totalVal = qty * currentReturnProduct.cost;
+      document.getElementById('retTotalValueDisplay').innerText = `මුළු Return වටිනාකම (Cost Value): Rs. ${totalVal.toFixed(2)}`;
+      if (document.getElementById('retSettlement').value === 'Replaced') {
+        document.getElementById('retNewQty').value = qty;
+      }
+    }
+
+    async function submitSupplierReturn() {
+      if (!currentReturnProduct) return;
+      const selVal = document.getElementById('retSupplierSelect').value;
+   const supplier = (selVal === '__OTHER__')
+     ? document.getElementById('retSupplier').value.trim()
+     : selVal.trim();
+      const retQty = parseFloat(document.getElementById('retQty').value) || 0;
+      const settlement = document.getElementById('retSettlement').value;
+      const notes = document.getElementById('retNotes').value.trim();
+
+      if (!supplier) {
+        alert("⚠️ කරුණාකර සැපයුම්කරුගේ හෝ සමාගමේ නම ඇතුළත් කරන්න!");
+        document.getElementById('retSupplier').focus();
+        return;
+      }
+      if (retQty <= 0 || retQty > currentReturnProduct.stock) {
+        alert("⚠️ ආපසු දෙන ප්‍රමාණය 0 ට වඩා වැඩි විය යුතු අතර, දැනට ඇති තොගයට (" + currentReturnProduct.stock + ") වඩා වැඩි විය නොහැක!");
+        document.getElementById('retQty').focus();
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmitReturn');
+      btn.disabled = true;
+      btn.innerText = "Processing...";
+
+      try {
+        const now = new Date();
+        const retNo = "RET-" + now.getFullYear().toString().slice(-2) +
+                      String(now.getMonth() + 1).padStart(2, '0') +
+                      String(now.getDate()).padStart(2, '0') + "-" +
+                      String(now.getHours()).padStart(2, '0') +
+                      String(now.getMinutes()).padStart(2, '0') +
+                      String(now.getSeconds()).padStart(2, '0');
+
+        const totalCostVal = Number((retQty * currentReturnProduct.cost).toFixed(2));
+        const status = (settlement === 'Credit Note') ? 'Pending' : 'Settled';
+
+        // 1. supplier_returns වගුවට වාර්තාව ඇතුළත් කිරීම
+        const { error: retErr } = await db.from('supplier_returns').insert([{
+          return_no: retNo,
+          supplier_name: supplier,
+          barcode: currentReturnProduct.barcode,
+          item_name: currentReturnProduct.name,
+          expiry_date: currentReturnProduct.expiry_date || null,
+          return_qty: retQty,
+          cost_price: currentReturnProduct.cost,
+          total_cost_value: totalCostVal,
+          settlement_type: settlement,
+          status: status,
+          notes: notes
+        }]);
+        if (retErr) throw retErr;
+
+        // 2. පරණ තොගයෙන් (Batch) Return කළ ප්‍රමාණය අඩු කිරීම
+        const remainingOldStock = Number((currentReturnProduct.stock - retQty).toFixed(3));
+        const { error: updErr } = await db.from('products')
+          .update({ stock: remainingOldStock })
+          .eq('id', currentReturnProduct.id);
+        if (updErr) throw updErr;
+
+        // 3. Replacement (අලුත් බඩු මාරු කර දුන්නා නම්) අලුත් තොගය එකතු කිරීම
+        if (settlement === 'Replaced') {
+          const newQty = parseFloat(document.getElementById('retNewQty').value) || 0;
+          const newExp = document.getElementById('retNewExpiry').value || null;
+          const newCost = parseFloat(document.getElementById('retNewCost').value) || currentReturnProduct.cost;
+          const newPrice = parseFloat(document.getElementById('retNewPrice').value) || currentReturnProduct.price;
+
+          if (newQty > 0) {
+            const matchingBatch = allProducts.find(p =>
+              p.id !== currentReturnProduct.id &&
+              p.barcode === currentReturnProduct.barcode &&
+              p.price === newPrice &&
+              (p.expiry_date || null) === newExp
+            );
+
+            if (matchingBatch) {
+              await db.from('products').update({
+                cost: newCost,
+                stock: Number((matchingBatch.stock + newQty).toFixed(3))
+              }).eq('id', matchingBatch.id);
+            } else {
+              await db.from('products').insert([{
+                barcode: currentReturnProduct.barcode,
+                name: currentReturnProduct.name,
+                unit: currentReturnProduct.unit,
+                cost: newCost,
+                price: newPrice,
+                stock: newQty,
+                discount: currentReturnProduct.discount || 0,
+                expiry_date: newExp
+              }]);
+            }
+          }
+        }
+
+        alert("✅ Supplier Return සාර්ථකව සටහන් විය! (" + retNo + ")");
+        closeSupplierReturnModal();
+        await loadData();
+      } catch (err) {
+        alert("Error: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "✅ Confirm Return";
+      }
+    }
+
+    async function settleSupplierCreditNote(id, supplierName, amount) {
+      if (!isCurrentUserAdmin) return;
+      if (!confirm(`✅ '${supplierName}' සමාගමෙන් ලැබිය යුතු Rs. ${Number(amount).toFixed(2)} ක Credit Note මුදල පියවූ (Settled) බව තහවුරු කරන්නද?`)) return;
+
+      const { error } = await db.from('supplier_returns').update({ status: 'Settled' }).eq('id', id);
+      if (error) {
+        alert("Error: " + error.message);
+      } else {
+        alert("🎉 Credit Note මුදල සාර්ථකව පියවන ලදී!");
+        await generateBusinessReport();
+        await loadData();
+      }
+    }
+	// ==========================================
+    // SUPPLIERS MANAGEMENT FUNCTIONS
+    // ==========================================
+    function onRetSupplierSelectChange() {
+      const sel = document.getElementById('retSupplierSelect').value;
+      const inp = document.getElementById('retSupplier');
+      if (sel === '__OTHER__') {
+        inp.style.display = 'block';
+        inp.value = '';
+        inp.focus();
+      } else {
+        inp.style.display = 'none';
+        inp.value = sel;
+      }
+    }
+
+    async function loadSuppliersData() {
+      const { data: sups, error } = await db
+        .from('suppliers')
+        .select('*')
+        .order('supplier_name', { ascending: true });
+
+      if (error) {
+        console.error("Suppliers load error:", error.message);
+        return;
+      }
+
+      allSuppliers = sups || [];
+
+      // එක් එක් Supplier ගෙන් ලැබිය යුතු Pending Credit Notes එකතුව ගණනය කිරීම
+      const { data: pendingRets } = await db
+        .from('supplier_returns')
+        .select('supplier_name, total_cost_value')
+        .eq('status', 'Pending');
+
+      pendingReturnsBySupplier = {};
+      (pendingRets || []).forEach(r => {
+        const key = (r.supplier_name || '').toLowerCase().trim();
+        pendingReturnsBySupplier[key] = (pendingReturnsBySupplier[key] || 0) + (Number(r.total_cost_value) || 0);
+      });
+
+      renderSuppliersTable(allSuppliers);
+    }
+
+    function filterSuppliersTable() {
+      const q = document.getElementById('supSearchInput').value.toLowerCase().trim();
+      const filtered = allSuppliers.filter(s =>
+        (s.supplier_name && s.supplier_name.toLowerCase().includes(q)) ||
+        (s.rep_name && s.rep_name.toLowerCase().includes(q)) ||
+        (s.phone && s.phone.toLowerCase().includes(q)) ||
+        (s.visit_day && s.visit_day.toLowerCase().includes(q)) ||
+        (s.notes && s.notes.toLowerCase().includes(q))
+      );
+      renderSuppliersTable(filtered);
+    }
+
+    function renderSuppliersTable(list) {
+      const tbody = document.getElementById('suppliersTableBody');
+      if (!tbody) return;
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--muted); padding:20px;">සැපයුම්කරුවන් හමු නොවීය. ඉහත Form එකෙන් ඇතුළත් කරන්න.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(s => {
+        const pendVal = pendingReturnsBySupplier[(s.supplier_name || '').toLowerCase().trim()] || 0;
+        return `
+          <tr>
+            <td style="font-weight:bold; color:#38bdf8;">${s.supplier_name}</td>
+            <td>${s.rep_name || '-'}</td>
+            <td>${s.phone ? `<a href="tel:${s.phone}" style="color:var(--accent); text-decoration:none;">📞 ${s.phone}</a>` : '-'}</td>
+            <td>${s.visit_day || '-'}</td>
+            <td>${s.payment_terms || 'Cash'}</td>
+            <td style="font-weight:bold; color:${pendVal > 0 ? '#f59e0b' : 'var(--muted)'};">
+              ${pendVal > 0 ? 'Rs. ' + pendVal.toFixed(2) + ' ⚠️' : 'Rs. 0.00'}
+            </td>
+            <td style="color:var(--muted); font-size:0.85rem;">${s.notes || '-'}</td>
+            <td style="text-align:right; white-space:nowrap;">
+              <button onclick='openEditSupplierModal(${JSON.stringify(s)})' style="background:#3b82f6; color:#fff; border:none; border-radius:4px; padding:4px 8px; cursor:pointer; margin-right:4px;">✏️ Edit</button>
+              ${isCurrentUserAdmin ? `<button class="btn-del" onclick="deleteSupplier(${s.id}, '${s.supplier_name.replace(/'/g, "\\'")}')">🗑️ Delete</button>` : ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function saveNewSupplier() {
+      const name = document.getElementById('supName').value.trim();
+      const rep = document.getElementById('supRep').value.trim();
+      const phone = document.getElementById('supPhone').value.trim();
+      const visitDay = document.getElementById('supVisitDay').value;
+      const terms = document.getElementById('supTerms').value;
+      const notes = document.getElementById('supNotes').value.trim();
+
+      if (!name) {
+        alert("⚠️ කරුණාකර සමාගමේ හෝ සැපයුම්කරුගේ නම ඇතුළත් කරන්න!");
+        document.getElementById('supName').focus();
+        return;
+      }
+
+      const duplicate = allSuppliers.find(s => s.supplier_name.toLowerCase() === name.toLowerCase());
+      if (duplicate) {
+        alert("⚠️ '" + name + "' දැනටමත් ලැයිස්තුවේ ඇතුළත් කර ඇත!");
+        return;
+      }
+
+      const { error } = await db.from('suppliers').insert([{
+        supplier_name: name,
+        rep_name: rep,
+        phone: phone,
+        visit_day: visitDay,
+        payment_terms: terms,
+        notes: notes
+      }]);
+
+      if (error) {
+        alert("Error: " + error.message);
+        return;
+      }
+
+      alert("✅ සැපයුම්කරු සාර්ථකව ඇතුළත් කරන ලදී!");
+      document.getElementById('supName').value = '';
+      document.getElementById('supRep').value = '';
+      document.getElementById('supPhone').value = '';
+      document.getElementById('supVisitDay').value = '';
+      document.getElementById('supNotes').value = '';
+      document.getElementById('supName').focus();
+      await loadSuppliersData();
+    }
+
+    function openEditSupplierModal(s) {
+      document.getElementById('editSupId').value = s.id;
+      document.getElementById('editSupName').value = s.supplier_name;
+      document.getElementById('editSupRep').value = s.rep_name || '';
+      document.getElementById('editSupPhone').value = s.phone || '';
+      document.getElementById('editSupVisitDay').value = s.visit_day || '';
+      document.getElementById('editSupTerms').value = s.payment_terms || 'Cash on Delivery';
+      document.getElementById('editSupNotes').value = s.notes || '';
+      document.getElementById('editSupplierModal').style.display = 'flex';
+    }
+
+    function closeEditSupplierModal() {
+      document.getElementById('editSupplierModal').style.display = 'none';
+    }
+
+    async function submitEditSupplier() {
+      const id = Number(document.getElementById('editSupId').value);
+      const updated = {
+        supplier_name: document.getElementById('editSupName').value.trim(),
+        rep_name: document.getElementById('editSupRep').value.trim(),
+        phone: document.getElementById('editSupPhone').value.trim(),
+        visit_day: document.getElementById('editSupVisitDay').value,
+        payment_terms: document.getElementById('editSupTerms').value,
+        notes: document.getElementById('editSupNotes').value.trim()
+      };
+
+      if (!updated.supplier_name) {
+        alert("⚠️ කරුණාකර සමාගමේ නම ඇතුළත් කරන්න!");
+        return;
+      }
+
+      const { error } = await db.from('suppliers').update(updated).eq('id', id);
+      if (error) {
+        alert("Error: " + error.message);
+      } else {
+        alert("✅ සැපයුම්කරුගේ විස්තර යාවත්කාලීන කරන ලදී!");
+        closeEditSupplierModal();
+        await loadSuppliersData();
+      }
+    }
+
+    async function deleteSupplier(id, name) {
+      if (!isCurrentUserAdmin) return;
+      if (!confirm("⚠️ '" + name + "' සැපයුම්කරු ලැයිස්තුවෙන් ඉවත් කරන්නද?")) return;
+
+      const { error } = await db.from('suppliers').delete().eq('id', id);
+      if (error) {
+        alert("Error: " + error.message);
+      } else {
+        alert("සැපයුම්කරු ඉවත් කරන ලදී!");
+        await loadSuppliersData();
+      }
+    }
   </script>
 </body>
 </html>
