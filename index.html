@@ -2895,11 +2895,20 @@
     }
 
     function renderStockTable(list) {
-      const canEdit = isCurrentUserAdmin || isStockOverrideUnlocked;
-      const overrideBtn = document.getElementById('btnStockOverride');
-      if (overrideBtn) overrideBtn.style.display = isCurrentUserAdmin ? 'none' : 'inline-block';
+   const canEdit = isCurrentUserAdmin || isStockOverrideUnlocked;
+   const overrideBtn = document.getElementById('btnStockOverride');
+   if (overrideBtn) overrideBtn.style.display = isCurrentUserAdmin ? 'none' : 'inline-block';
 
-      document.getElementById('stockTableBody').innerHTML = list.map(p => {
+   // එකම Barcode එකෙන් අලුත් Stock (> 0) තියෙනවා නම්, 0 වුණු පරණ Batch පේළි සැඟවීම
+   const visibleStockList = list.filter(p => {
+     if (p.stock > 0) return true;
+     const hasActiveBatch = allProducts.some(other => other.barcode === p.barcode && other.stock > 0);
+     if (hasActiveBatch) return false;
+     const sameCodeItems = allProducts.filter(other => other.barcode === p.barcode);
+     return sameCodeItems[sameCodeItems.length - 1].id === p.id;
+   });
+
+   document.getElementById('stockTableBody').innerHTML = visibleStockList.map(p => {
         const expInfo = getExpiryStatus(p.expiry_date);
         const expColor = expInfo.status === 'expired' ? 'var(--danger)' : (expInfo.status === 'soon' ? '#fbbf24' : 'var(--muted)');
         return `
@@ -3506,6 +3515,45 @@
         await loadSuppliersData();
       }
     }
+	// ADD SUPPLIER FORM - ENTER & ARROW KEY NAVIGATION
+    const supplierFieldOrder = ['supName', 'supRep', 'supPhone', 'supVisitDay', 'supTerms', 'supNotes'];
+    supplierFieldOrder.forEach((fieldId, index) => {
+      const el = document.getElementById(fieldId);
+      if (!el) return;
+
+      el.addEventListener('keydown', function(e) {
+        // 1. ENTER KEY: ඊළඟ කොටුවට යාම (අවසාන කොටුවේදී Save කිරීම)
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (index < supplierFieldOrder.length - 1) {
+            const nextEl = document.getElementById(supplierFieldOrder[index + 1]);
+            if (nextEl) { nextEl.focus(); if (nextEl.select) nextEl.select(); }
+          } else {
+            saveNewSupplier();
+          }
+        }
+        // 2. RIGHT ARROW (→): කොටුවේ අගටම ගිය විට හෝ Dropdown එකකදී දකුණු පස කොටුවට යාම
+        else if (e.key === 'ArrowRight') {
+          const isSelect = (el.tagName === 'SELECT');
+          const atEnd = isSelect || (el.selectionStart === el.value.length && el.selectionEnd === el.value.length);
+          if (atEnd && index < supplierFieldOrder.length - 1) {
+            e.preventDefault();
+            const nextEl = document.getElementById(supplierFieldOrder[index + 1]);
+            if (nextEl) { nextEl.focus(); if (nextEl.select) nextEl.select(); }
+          }
+        }
+        // 3. LEFT ARROW (←): කොටුවේ මුලටම ආ විට හෝ Dropdown එකකදී වම් පස කොටුවට යාම
+        else if (e.key === 'ArrowLeft') {
+          const isSelect = (el.tagName === 'SELECT');
+          const atStart = isSelect || (el.selectionStart === 0 && el.selectionEnd === 0);
+          if (atStart && index > 0) {
+            e.preventDefault();
+            const prevEl = document.getElementById(supplierFieldOrder[index - 1]);
+            if (prevEl) { prevEl.focus(); if (prevEl.select) prevEl.select(); }
+          }
+        }
+      });
+    });
   </script>
 </body>
 </html>
